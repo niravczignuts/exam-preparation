@@ -12,8 +12,9 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql` and `0002_storage_buckets.sql`.
+4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql`, `0002_storage_buckets.sql`, and `0004_reset_user_data_function.sql`.
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
+6. **Authentication → Sign In / Providers → enable "Allow anonymous sign-ins"** (Sprint 2, KAN-59/60/61/62). The app has no login screen; the frontend signs in anonymously on first load so `settings`/`exam_stages`' RLS policies (scoped to `auth.uid()`) have a real user to key off. Without this toggle, Settings/Exam Stages will fail to load with an "Anonymous sign-ins are disabled" error.
 
 ## 3. Backend on Render (KAN-70, KAN-73)
 
@@ -44,6 +45,13 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 4. Project Settings → Service Accounts → Generate new private key → this JSON file is a real secret. Never commit it (it's gitignored). Use it locally as `backend/.env`'s `FIREBASE_SERVICE_ACCOUNT_PATH`, and upload it to Render as a Secret File (step 3 above) in production.
 5. **End-to-end test** (this is the one piece of KAN-72's acceptance criteria nobody but you can complete, since it needs a live Firebase project + a real browser): once both frontend and backend are deployed, open the deployed site, grant notification permission, and confirm a registration token appears (wire that up to a `device_tokens` insert — not yet built, this is scaffolding only). Then call `app.fcm.send_push(token, "Test", "Hello")` from a Python shell against the deployed backend and confirm the browser receives it.
 
+## 6. Supabase Auth (Sprint 3)
+
+The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Settings/Exam Stages — every table's RLS policy checks it. There's no separate sign-up flow for this: the anonymous session from step 2/6 above already gives every table (syllabus included) a stable `auth.uid()`, so no email/password login screen was added.
+
+1. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the Supabase Auth token (anonymous session included) the frontend sends on `POST /syllabus/uploads`.
+2. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
+
 ## What's genuinely done vs. what needs you
 
 | Ticket | Code/config done | Needs your manual action |
@@ -54,3 +62,8 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 | KAN-71 | Frontend scaffold + netlify.toml | Create the Netlify site, link repo |
 | KAN-72 | Client + backend FCM integration code | Create the Firebase project, get credentials, run the live test |
 | KAN-73 | Job script + Render cron definition | Deploy so it actually runs on schedule |
+| KAN-59/60/61/62 | Settings + Exam Stages UI, `reset_user_data()` migration | Enable anonymous sign-ins (step 6 above), `supabase db push` migration 0004 |
+| KAN-63/64 | Manifest, extended service worker (offline caching + background sync) | None — icons reuse `favicon.svg`; swap in real PNG/maskable icons when design assets exist |
+| KAN-65 | Responsive nav + layout pass | None |
+| KAN-18..22 | Syllabus CRUD, upload/parse endpoint, completion tracking | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (step 6 above) |
+| KAN-50, KAN-51 | Countdown tile(s) on Home, multi-stage support | None |
