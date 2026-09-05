@@ -69,3 +69,4 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 | KAN-50, KAN-51 | Countdown tile(s) on Home, multi-stage support | None |
 | KAN-23..27, KAN-29 | Multi-file PYQ upload + auto-parse/answer/tag endpoint, Q&A bank UI (edit/delete/re-tag), timed/untimed practice mode | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (same as KAN-18..22, shared) |
 | KAN-28 | Wrong/skipped answers auto-added to `revision_queue_items` | None — full spaced-repetition scheduling UI is KAN-13 |
+| KAN-34..37 | Timetable CRUD (day/week/month views), auto-suggest from remaining syllabus + exam date, missed-session detection + reschedule suggestions | None — all direct-to-Supabase, no new backend/env needed |

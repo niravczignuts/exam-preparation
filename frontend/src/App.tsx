@@ -11,6 +11,7 @@ import { Practice } from "./routes/Practice";
 import { Pyq } from "./routes/Pyq";
 import { Settings } from "./routes/Settings";
 import { Syllabus } from "./routes/Syllabus";
+import { Timetable } from "./routes/Timetable";
 
 function App() {
   const [authReady, setAuthReady] = useState(false);
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/syllabus" element={<Syllabus />} />
                   <Route path="/pyq" element={<Pyq />} />
                   <Route path="/practice" element={<Practice />} />
+                  <Route path="/timetable" element={<Timetable />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>

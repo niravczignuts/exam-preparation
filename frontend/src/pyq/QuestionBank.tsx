@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { PencilIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import type { SubjectNode, TopicNode } from "@/syllabus/useSyllabusTree";
+import type { SubjectNode } from "@/syllabus/useSyllabusTree";
+import { flattenTopics } from "@/syllabus/flattenTopics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,19 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { deleteQuestion, updateQuestion, useQuestions, type Question } from "./usePyqQuestions";
-
-function flattenTopics(subjects: SubjectNode[]): { id: string; label: string }[] {
-  const out: { id: string; label: string }[] = [];
-  function walk(topics: TopicNode[], subjectName: string, prefix: string) {
-    for (const topic of topics) {
-      const label = `${subjectName} > ${prefix}${topic.name}`;
-      out.push({ id: topic.id, label });
-      if (topic.subtopics.length) walk(topic.subtopics, subjectName, `${prefix}${topic.name} > `);
-    }
-  }
-  for (const subject of subjects) walk(subject.topics, subject.name, "");
-  return out;
-}
 
 function EditQuestionDialog({
   question,

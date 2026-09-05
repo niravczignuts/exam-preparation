@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { to: "/syllabus", key: "navSyllabus" as const, end: false },
   { to: "/pyq", key: "navPyq" as const, end: false },
   { to: "/practice", key: "navPractice" as const, end: false },
+  { to: "/timetable", key: "navTimetable" as const, end: false },
   { to: "/settings", key: "navSettings" as const, end: false },
 ];
 
