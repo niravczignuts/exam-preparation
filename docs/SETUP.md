@@ -12,8 +12,9 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql` and `0002_storage_buckets.sql`.
+4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql`, `0002_storage_buckets.sql`, and `0004_reset_user_data_function.sql`.
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
+6. **Authentication → Sign In / Providers → enable "Allow anonymous sign-ins"** (Sprint 2, KAN-59/60/61/62). The app has no login screen; the frontend signs in anonymously on first load so `settings`/`exam_stages`' RLS policies (scoped to `auth.uid()`) have a real user to key off. Without this toggle, Settings/Exam Stages will fail to load with an "Anonymous sign-ins are disabled" error.
 
 ## 3. Backend on Render (KAN-70, KAN-73)
 
@@ -54,3 +55,6 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 | KAN-71 | Frontend scaffold + netlify.toml | Create the Netlify site, link repo |
 | KAN-72 | Client + backend FCM integration code | Create the Firebase project, get credentials, run the live test |
 | KAN-73 | Job script + Render cron definition | Deploy so it actually runs on schedule |
+| KAN-59/60/61/62 | Settings + Exam Stages UI, `reset_user_data()` migration | Enable anonymous sign-ins (step 6 above), `supabase db push` migration 0004 |
+| KAN-63/64 | Manifest, extended service worker (offline caching + background sync) | None — icons reuse `favicon.svg`; swap in real PNG/maskable icons when design assets exist |
+| KAN-65 | Responsive nav + layout pass | None |

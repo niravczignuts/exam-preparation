@@ -1,0 +1,139 @@
+.settings-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 4vw, 1.5rem) 3rem;
+  text-align: left;
+}
+
+.settings-page section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.settings-page h2 {
+  text-align: left;
+}
+
+.save-indicator {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.pill-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pill-group button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pill-group button.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.exam-stage-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exam-stage-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.exam-stage-list li span:first-child {
+  font-weight: 500;
+  color: var(--text-h);
+  flex: 1;
+  min-width: 8rem;
+}
+
+.exam-stage-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.exam-stage-form input {
+  flex: 1;
+  min-width: 10rem;
+  font: inherit;
+}
+
+.checkbox-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem;
+}
+
+.checkbox-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quiet-hours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.quiet-hours label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+button.danger {
+  font: inherit;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #e5484d;
+  background: transparent;
+  color: #e5484d;
+  cursor: pointer;
+}
+
+button.danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Buttons/inputs everywhere should stay comfortably tappable on mobile (KAN-65). */
+input,
+button {
+  min-height: 2.4rem;
+}
+
+@media (max-width: 480px) {
+  .exam-stage-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
