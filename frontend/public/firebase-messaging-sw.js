@@ -28,7 +28,25 @@ messaging.onBackgroundMessage((payload) => {
     // No PNG icon asset exists yet (KAN-63 note) — SVG isn't reliably
     // supported for system notification icons, so this is left to the
     // browser's default until a real icon set is designed.
+    data: payload.data || {},
   });
+});
+
+// KAN-46 AC3: deep-link to the relevant screen when a notification is tapped.
+// notification_job.py sends every push with data.url set to the in-app route.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("navigate" in client && "focus" in client) {
+          return client.navigate(url).then((navigated) => (navigated || client).focus());
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
 });
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ export interface NotificationPrefs {
   endOfDayCheckin: boolean;
   revisionDue: boolean;
   mockTestDue: boolean;
+  motivational: boolean;
 }
 
 export interface SettingsRow {
@@ -35,6 +36,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   endOfDayCheckin: true,
   revisionDue: true,
   mockTestDue: true,
+  motivational: true,
 };
 
 function defaultSettings(userId: string): SettingsRow {

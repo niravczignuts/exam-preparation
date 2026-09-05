@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Loader2Icon } from "lucide-react";
+import { ensurePushRegistered } from "./lib/pushNotifications";
 import { ensureAnonymousSession } from "./lib/supabaseClient";
 import { ThemeProvider } from "./lib/theme";
 import { SettingsProvider } from "./hooks/useSettings";
@@ -24,7 +25,12 @@ function App() {
 
   useEffect(() => {
     ensureAnonymousSession()
-      .then(() => setAuthReady(true))
+      .then(() => {
+        setAuthReady(true);
+        // KAN-45: request notification permission on first load — fire-and-forget,
+        // never blocks the app from becoming usable if it's denied/unsupported.
+        void ensurePushRegistered();
+      })
       .catch((err: unknown) => {
         console.error("ensureAnonymousSession failed", err);
         setAuthError(err instanceof Error ? err.message : "Failed to start a session.");

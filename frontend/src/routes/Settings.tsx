@@ -33,6 +33,7 @@ const NOTIFICATION_CATEGORIES: {
   { key: "endOfDayCheckin", labelKey: "notifEndOfDayCheckin" },
   { key: "revisionDue", labelKey: "notifRevisionDue" },
   { key: "mockTestDue", labelKey: "notifMockTestDue" },
+  { key: "motivational", labelKey: "notifMotivational" },
 ];
 
 export function Settings() {

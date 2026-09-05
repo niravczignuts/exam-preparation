@@ -4,8 +4,8 @@ import { BellIcon, BookOpenIcon, CheckCircle2Icon, CircleAlertIcon, CircleIcon }
 import { toast } from "sonner";
 
 import { CountdownTile } from "@/countdown/CountdownTile";
-import { onForegroundMessage, requestPushToken } from "@/firebase";
 import { useExamStages } from "@/hooks/useExamStages";
+import { ensurePushRegistered } from "@/lib/pushNotifications";
 import { useSyllabusTree } from "@/syllabus/useSyllabusTree";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function Home() {
   const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "unreachable">("checking");
-  const [pushToken, setPushToken] = useState<string | null | "pending" | "error">(null);
+  const [pushStatus, setPushStatus] = useState<"granted" | "denied" | "unsupported" | "checking">(
+    "checking",
+  );
   const { stages, loading, deleteStage } = useExamStages();
   const { subjects, overallPercent } = useSyllabusTree();
 
@@ -25,26 +27,20 @@ export function Home() {
       .catch(() => setApiStatus("unreachable"));
   }, []);
 
-  async function enableNotifications() {
-    setPushToken("pending");
-    try {
-      const token = await requestPushToken();
-      setPushToken(token);
-      if (token) {
-        toast.success("Notifications enabled");
-        // Only fires while this tab is focused — FCM routes to the service
-        // worker's background handler otherwise. Shown manually since the
-        // browser won't auto-display a notification for a focused tab.
-        onForegroundMessage((payload) => {
-          const { title, body } = payload.notification ?? {};
-          new Notification(title ?? "Exam Prep App", { body: body ?? "" });
-        });
-      }
-    } catch (err) {
-      console.error("requestPushToken failed", err);
-      setPushToken("error");
-      toast.error("Couldn't enable notifications — check the console.");
+  useEffect(() => {
+    if (typeof Notification === "undefined") {
+      setPushStatus("unsupported");
+      return;
     }
+    setPushStatus(Notification.permission === "granted" ? "granted" : "denied");
+  }, []);
+
+  async function enableNotifications() {
+    setPushStatus("checking");
+    const result = await ensurePushRegistered();
+    setPushStatus(result);
+    if (result === "granted") toast.success("Notifications enabled");
+    else toast.error("Couldn't enable notifications — check your browser's site settings.");
   }
 
   return (
@@ -131,21 +127,26 @@ export function Home() {
               Backend API: {apiStatus}
             </p>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={enableNotifications}
-              disabled={pushToken === "pending"}
-              className="w-fit"
-            >
-              {pushToken === "pending" ? "Requesting…" : "Enable notifications"}
-            </Button>
+            <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              {pushStatus === "granted" ? (
+                <>
+                  <CheckCircle2Icon className="text-success size-4" /> Reminders enabled on this device
+                </>
+              ) : pushStatus === "checking" ? (
+                <>
+                  <CircleIcon className="size-4 animate-pulse" /> Checking permission…
+                </>
+              ) : (
+                <>
+                  <CircleAlertIcon className="text-warning size-4" /> Reminders not enabled
+                </>
+              )}
+            </p>
 
-            {pushToken && pushToken !== "pending" && pushToken !== "error" && (
-              <p className="text-muted-foreground truncate text-xs">
-                FCM token: <code className="bg-muted rounded px-1 py-0.5">{pushToken}</code>
-              </p>
+            {pushStatus !== "granted" && pushStatus !== "checking" && (
+              <Button type="button" size="sm" variant="outline" onClick={enableNotifications} className="w-fit">
+                Enable notifications
+              </Button>
             )}
           </CardContent>
         </Card>

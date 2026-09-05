@@ -12,19 +12,19 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0005_pyq_uploads_error_message.sql` (KAN-24/25 failure reporting) and `0006_mock_test_attempt_link.sql` (KAN-32/33 per-attempt score breakdown) — `pyq_uploads`/`questions`/`question_attempts`/`revision_queue_items`/`mock_tests`/`mock_test_questions`/`mock_test_attempts`/`timetables`/`timetable_sessions` themselves were already part of `0001_core_schema.sql`.
+4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0005_pyq_uploads_error_message.sql` (KAN-24/25 failure reporting), `0006_mock_test_attempt_link.sql` (KAN-32/33 per-attempt score breakdown), and `0007_notification_dedupe.sql` (KAN-46..49 — lets the notification job claim-then-send without double-firing) — `pyq_uploads`/`questions`/`question_attempts`/`revision_queue_items`/`mock_tests`/`mock_test_questions`/`mock_test_attempts`/`timetables`/`timetable_sessions`/`device_tokens`/`notification_log` themselves were already part of `0001_core_schema.sql`.
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
 6. **Authentication → Sign In / Providers → enable "Allow anonymous sign-ins"** (Sprint 2, KAN-59/60/61/62). The app has no login screen; the frontend signs in anonymously on first load so `settings`/`exam_stages`' RLS policies (scoped to `auth.uid()`) have a real user to key off. Without this toggle, Settings/Exam Stages will fail to load with an "Anonymous sign-ins are disabled" error.
 
 ## 3. Backend on Render (KAN-70, KAN-73)
 
-The repo has `render.yaml` (a Render "Blueprint") defining two services: the API (`exam-prep-api`, a Docker web service) and a cron job (`exam-prep-daily-target-job`, runs daily at 18:00 UTC).
+The repo has `render.yaml` (a Render "Blueprint") defining three services: the API (`exam-prep-api`, a Docker web service) and two cron jobs — `exam-prep-daily-target-job` (daily, 18:00 UTC) and `exam-prep-notification-job` (**new**, every 15 minutes — KAN-46..49). Both cron services are Render's paid "starter" plan (free-tier services can't run on a schedule); the second cron job is an added recurring cost, not a one-time setup step — factor that in before deploying it.
 
-1. Go to render.com → New → Blueprint → connect this GitHub repo. Render reads `render.yaml` and proposes both services.
+1. Go to render.com → New → Blueprint → connect this GitHub repo. Render reads `render.yaml` and proposes all three services.
 2. For `exam-prep-api`, set the environment variables it asks for (marked `sync: false` in render.yaml, so Render will prompt): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
-3. Upload the Firebase service account JSON (see step 5) as a **Secret File** at `/etc/secrets/firebase-service-account.json` — this matches `FIREBASE_SERVICE_ACCOUNT_PATH` in `render.yaml`.
+3. Upload the Firebase service account JSON (see step 5) as a **Secret File** at `/etc/secrets/firebase-service-account.json` — this matches `FIREBASE_SERVICE_ACCOUNT_PATH` in `render.yaml`. `exam-prep-notification-job` needs this **same Secret File uploaded again on that service** (Render Secret Files are per-service, not shared) since it's the one that actually sends pushes.
 4. Deploy. Once live, verify `https://<your-service>.onrender.com/health` returns `{"status": "ok", ...}`.
-5. Set the same `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` on the `exam-prep-daily-target-job` cron service.
+5. Set the same `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` on both cron services.
 6. Edit `netlify.toml`'s `/api/*` redirect target to your real Render URL (Netlify doesn't support env-var interpolation in redirects, so this is a one-line manual edit, not an env var).
 
 **Why Render, not Netlify Functions**: Netlify's serverless functions are short-lived, request/response only — they can't run the always-on FastAPI process or the daily cron job KAN-73 needs (a function has no "sit and wait for 6pm" capability). Render's free web service stays up and its Cron Job service type runs on a real schedule against the same Docker image, so both KAN-70 and KAN-73 are satisfied by one host.
@@ -74,3 +74,5 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 | KAN-56..58 | Revision queue UI, 1/3/7-day spaced-repetition scheduling, cleared-item archive, no-duplicate-pending upsert on repeat wrong answers | None — all direct-to-Supabase, no new backend/env needed |
 | KAN-38, KAN-40, KAN-41 | Daily target accept/edit UI, streak + weekly-completion display; fixed `daily_target_job.py` to propose *tomorrow's* target (was generating today's, uselessly, minutes before the day ended) and carry forward unfinished work from a Partial/Missed day | None |
 | KAN-39, KAN-42..44 | End-of-day chatbot check-in (Gujarati/English via the existing language toggle, tone adapts to streak + last-7-day completion rate, asks completion status/question count/recall questions, persists full transcript) | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (shared with KAN-18..22/23..27) |
+| KAN-45 | Auto-request push permission on first load + actually save the FCM token to `device_tokens` (previously scaffolding-only — shown on Home but never persisted anywhere a job could read it) | None |
+| KAN-46..49 | New `exam-prep-notification-job` cron (every 15 min): session-start/upcoming-slot, pending-target, EOD check-in, revision-due, mock-test-due, and motivational (varying message, special variant after a Missed day) pushes — each respects its Settings toggle + quiet hours, deep-links on tap, deduped via `notification_log` | Deploy the new cron service + its own Firebase Secret File (step 3 above); `supabase db push` migration 0007 |
