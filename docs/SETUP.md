@@ -12,7 +12,7 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0005_pyq_uploads_error_message.sql` (KAN-24/25 failure reporting — `pyq_uploads`/`questions`/`question_attempts`/`revision_queue_items` themselves were already part of `0001_core_schema.sql`).
+4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0005_pyq_uploads_error_message.sql` (KAN-24/25 failure reporting) and `0006_mock_test_attempt_link.sql` (KAN-32/33 per-attempt score breakdown) — `pyq_uploads`/`questions`/`question_attempts`/`revision_queue_items`/`mock_tests`/`mock_test_questions`/`mock_test_attempts`/`timetables`/`timetable_sessions` themselves were already part of `0001_core_schema.sql`.
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
 6. **Authentication → Sign In / Providers → enable "Allow anonymous sign-ins"** (Sprint 2, KAN-59/60/61/62). The app has no login screen; the frontend signs in anonymously on first load so `settings`/`exam_stages`' RLS policies (scoped to `auth.uid()`) have a real user to key off. Without this toggle, Settings/Exam Stages will fail to load with an "Anonymous sign-ins are disabled" error.
 
@@ -70,3 +70,4 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 | KAN-23..27, KAN-29 | Multi-file PYQ upload + auto-parse/answer/tag endpoint, Q&A bank UI (edit/delete/re-tag), timed/untimed practice mode | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (same as KAN-18..22, shared) |
 | KAN-28 | Wrong/skipped answers auto-added to `revision_queue_items` | None — full spaced-repetition scheduling UI is KAN-13 |
 | KAN-34..37 | Timetable CRUD (day/week/month views), auto-suggest from remaining syllabus + exam date, missed-session detection + reschedule suggestions | None — all direct-to-Supabase, no new backend/env needed |
+| KAN-30..33 | Mock test generation (proportional MCQ selection from the Q&A bank), timed test-taking UI with flag/navigate/auto-submit, score report with topic breakdown, history + score trend chart | `supabase db push` migration 0006 |

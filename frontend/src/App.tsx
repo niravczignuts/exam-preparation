@@ -7,6 +7,9 @@ import { SettingsProvider } from "./hooks/useSettings";
 import { Toaster } from "./components/ui/sonner";
 import { NavBar } from "./components/NavBar";
 import { Home } from "./routes/Home";
+import { MockTest } from "./routes/MockTest";
+import { MockTestReport } from "./routes/MockTestReport";
+import { MockTestRunner } from "./routes/MockTestRunner";
 import { Practice } from "./routes/Practice";
 import { Pyq } from "./routes/Pyq";
 import { Settings } from "./routes/Settings";
@@ -53,6 +56,9 @@ function App() {
                   <Route path="/pyq" element={<Pyq />} />
                   <Route path="/practice" element={<Practice />} />
                   <Route path="/timetable" element={<Timetable />} />
+                  <Route path="/mock-test" element={<MockTest />} />
+                  <Route path="/mock-test/:attemptId/run" element={<MockTestRunner />} />
+                  <Route path="/mock-test/:attemptId/report" element={<MockTestReport />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>

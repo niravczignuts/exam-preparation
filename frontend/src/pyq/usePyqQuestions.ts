@@ -64,6 +64,7 @@ export async function recordAttempt(params: {
   isCorrect: boolean | null;
   wasSkipped: boolean;
   source?: "practice" | "mock_test";
+  mockTestAttemptId?: string;
 }): Promise<{ error: string | null }> {
   const userId = await getCurrentUserId();
   const { error } = await supabase.from("question_attempts").insert({
@@ -73,6 +74,7 @@ export async function recordAttempt(params: {
     is_correct: params.isCorrect,
     was_skipped: params.wasSkipped,
     source: params.source ?? "practice",
+    mock_test_attempt_id: params.mockTestAttemptId ?? null,
   });
   if (error) return { error: error.message };
 
