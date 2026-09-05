@@ -45,6 +45,15 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 4. Project Settings → Service Accounts → Generate new private key → this JSON file is a real secret. Never commit it (it's gitignored). Use it locally as `backend/.env`'s `FIREBASE_SERVICE_ACCOUNT_PATH`, and upload it to Render as a Secret File (step 3 above) in production.
 5. **End-to-end test** (this is the one piece of KAN-72's acceptance criteria nobody but you can complete, since it needs a live Firebase project + a real browser): once both frontend and backend are deployed, open the deployed site, grant notification permission, and confirm a registration token appears (wire that up to a `device_tokens` insert — not yet built, this is scaffolding only). Then call `app.fcm.send_push(token, "Test", "Hello")` from a Python shell against the deployed backend and confirm the browser receives it.
 
+## 6. Supabase Auth (Sprint 3)
+
+The syllabus features (KAN-18..22) require a real signed-in user — every table's RLS policy checks `auth.uid()`.
+
+1. Supabase Dashboard → Authentication → Providers → make sure **Email** is enabled (it is by default).
+2. For local/dev testing, Authentication → Settings → turn off "Confirm email" so `supabase.auth.signUp()` returns an active session immediately instead of requiring an email link (leave it on in production).
+3. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the token the frontend sends on `POST /syllabus/uploads`.
+4. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
+
 ## What's genuinely done vs. what needs you
 
 | Ticket | Code/config done | Needs your manual action |

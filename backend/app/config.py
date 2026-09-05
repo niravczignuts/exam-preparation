@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_service_role_key: str = ""
 
+    # HS256 shared secret used to verify Supabase Auth JWTs (Project Settings
+    # > API > JWT Settings). Lets the backend recover the caller's user_id
+    # without round-tripping to Supabase on every request.
+    supabase_jwt_secret: str = ""
+
+    # Anthropic API key for LLM-based syllabus parsing (KAN-19).
+    anthropic_api_key: str = ""
+
     # Path to the Firebase service account JSON (KAN-72). Never commit the
     # file itself — mount it as a secret file or paste its contents into this
     # env var's target platform (Render "Secret Files") at deploy time.

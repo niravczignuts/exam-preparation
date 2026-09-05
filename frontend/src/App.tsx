@@ -53,4 +53,12 @@ function App() {
   );
 }
 
+function App() {
+  return (
+    <AuthGate>
+      <AppContent />
+    </AuthGate>
+  );
+}
+
 export default App;
