@@ -1,7 +1,10 @@
 [build]
   base = "frontend"
   command = "npm run build"
-  publish = "frontend/dist"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24.15.0"
 
 # Proxy /api/* to the Render-hosted backend so the frontend can call it via a
 # same-origin relative path (Netlify doesn't support env-var interpolation in
