@@ -1,0 +1,20 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "frontend/dist"
+
+# Proxy /api/* to the Render-hosted backend so the frontend can call it via a
+# same-origin relative path (Netlify doesn't support env-var interpolation in
+# redirect targets, so this URL must be edited by hand once KAN-70 is
+# deployed — see docs/SETUP.md).
+[[redirects]]
+  from = "/api/*"
+  to = "https://REPLACE-WITH-YOUR-RENDER-SERVICE.onrender.com/:splat"
+  status = 200
+  force = true
+
+# SPA fallback so client-side routing works on refresh/deep links.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
