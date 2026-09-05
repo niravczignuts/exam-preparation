@@ -31,3 +31,6 @@ backend/.pytest_cache/
 
 # Logs
 *.log
+
+# Local Netlify folder
+.netlify
