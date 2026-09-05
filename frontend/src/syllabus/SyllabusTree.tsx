@@ -8,6 +8,7 @@ import {
   TrashIcon,
   TriangleAlertIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -337,8 +338,12 @@ export function SyllabusTree() {
   async function handleAddSubject(event: FormEvent) {
     event.preventDefault();
     if (!newSubject.trim()) return;
-    const { error } = await addSubject(newSubject.trim());
-    if (!error) setNewSubject("");
+    const { error: addError } = await addSubject(newSubject.trim());
+    if (addError) {
+      toast.error(addError);
+      return;
+    }
+    setNewSubject("");
     refresh();
   }
 

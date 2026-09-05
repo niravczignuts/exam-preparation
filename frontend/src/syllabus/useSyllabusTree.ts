@@ -114,7 +114,11 @@ export async function addSubject(name: string): Promise<{ error: string | null }
   if (!userData.user) return { error: "Not signed in" };
   const { error } = await supabase
     .from("subjects")
-    .insert({ user_id: userData.user.id, name, sort_order: Date.now() });
+    // sort_order is a 32-bit Postgres int — Date.now() (~1.79e12) overflows
+    // it, so every insert failed with "value out of range for type integer".
+    // Unix seconds (~1.79e9 today) fits comfortably and still orders new
+    // items after old ones.
+    .insert({ user_id: userData.user.id, name, sort_order: Math.floor(Date.now() / 1000) });
   return { error: error?.message ?? null };
 }
 
@@ -137,7 +141,8 @@ export async function addTopic(
     subject_id: subjectId,
     parent_topic_id: parentTopicId,
     name,
-    sort_order: Date.now(),
+    // See addSubject's comment — sort_order is a 32-bit int, Date.now() overflows it.
+    sort_order: Math.floor(Date.now() / 1000),
   });
   return { error: error?.message ?? null };
 }
