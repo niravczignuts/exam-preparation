@@ -21,7 +21,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: free
+    plan: starter
     schedule: "0 18 * * *" # 18:00 UTC = 23:30 IST — end of the study day
     dockerCommand: python -m app.jobs.daily_target_job
     envVars:
