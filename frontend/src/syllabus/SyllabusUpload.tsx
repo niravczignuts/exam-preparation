@@ -1,5 +1,9 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { Loader2Icon, UploadCloudIcon } from "lucide-react";
+import { toast } from "sonner";
+
+import { supabase } from "@/lib/supabaseClient";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function SyllabusUpload({ onUploaded }: { onUploaded: () => void }) {
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
@@ -36,29 +40,50 @@ export function SyllabusUpload({ onUploaded }: { onUploaded: () => void }) {
         throw new Error(body?.detail ?? `Upload failed (${response.status})`);
       }
       setStatus("idle");
+      toast.success("Syllabus parsed and added");
       onUploaded();
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setError(message);
+      toast.error(message);
     } finally {
       if (inputRef.current) inputRef.current.value = "";
     }
   }
 
   return (
-    <div>
-      <label>
-        Upload syllabus (PDF, DOCX, or image) — auto-parsed into a topic tree
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.docx,image/*"
-          onChange={handleFileChange}
-          disabled={status === "uploading"}
-        />
-      </label>
-      {status === "uploading" && <p>Parsing your syllabus… this can take a moment.</p>}
-      {status === "error" && <p role="alert">{error}</p>}
-    </div>
+    <Card className="border-dashed py-0">
+      <CardContent className="px-0">
+        <label
+          htmlFor="syllabus-upload"
+          className="hover:bg-accent/40 flex cursor-pointer flex-col items-center gap-2 rounded-xl px-5 py-8 text-center transition-colors"
+        >
+          {status === "uploading" ? (
+            <Loader2Icon className="text-primary size-6 animate-spin" />
+          ) : (
+            <UploadCloudIcon className="text-muted-foreground size-6" />
+          )}
+          <span className="text-sm font-medium">
+            {status === "uploading" ? "Parsing your syllabus…" : "Upload syllabus (PDF, DOCX, or image)"}
+          </span>
+          <span className="text-muted-foreground text-xs">Auto-parsed into a topic tree</span>
+          <input
+            id="syllabus-upload"
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.docx,image/*"
+            onChange={handleFileChange}
+            disabled={status === "uploading"}
+            className="sr-only"
+          />
+        </label>
+        {status === "error" && (
+          <p role="alert" className="text-destructive px-5 pb-4 text-center text-sm">
+            {error}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

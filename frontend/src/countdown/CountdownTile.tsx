@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import type { ExamStage } from "../hooks/useExamStages";
+import { XIcon } from "lucide-react";
+
+import type { ExamStage } from "@/hooks/useExamStages";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function CountdownTile({
   stage,
@@ -24,18 +28,31 @@ export function CountdownTile({
   const minutes = totalMinutes % 60;
 
   return (
-    <div className="countdown-tile">
-      <h4>{stage.name}</h4>
-      {isPast ? (
-        <p>This stage has passed.</p>
-      ) : (
-        <p className="countdown-value">
-          {days}d {hours}h {minutes}m
-        </p>
-      )}
-      <button type="button" onClick={onRemove}>
-        Remove
-      </button>
-    </div>
+    <Card className="relative min-w-40 flex-1 gap-1 py-4">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 size-6"
+        onClick={onRemove}
+        aria-label={`Remove ${stage.name}`}
+      >
+        <XIcon className="size-3.5" />
+      </Button>
+      <div className="px-4">
+        <p className="text-muted-foreground text-sm font-medium">{stage.name}</p>
+        {isPast ? (
+          <p className="mt-1 text-sm">This stage has passed.</p>
+        ) : (
+          <p className="text-primary mt-1 flex items-baseline gap-1.5 text-2xl font-bold tabular-nums">
+            {days}
+            <span className="text-muted-foreground text-xs font-normal">d</span>
+            {String(hours).padStart(2, "0")}
+            <span className="text-muted-foreground text-xs font-normal">h</span>
+            {String(minutes).padStart(2, "0")}
+            <span className="text-muted-foreground text-xs font-normal">m</span>
+          </p>
+        )}
+      </div>
+    </Card>
   );
 }

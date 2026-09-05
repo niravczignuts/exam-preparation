@@ -1,5 +1,22 @@
 import { useState, type FormEvent } from "react";
 import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   TOPIC_STATUSES,
   addSubject,
   addTopic,
@@ -21,6 +38,35 @@ const STATUS_LABELS: Record<TopicStatus, string> = {
   completed: "Completed",
   revision_needed: "Revision needed",
 };
+
+const STATUS_BADGE_VARIANT: Record<TopicStatus, "outline" | "secondary" | "success" | "warning"> = {
+  not_started: "outline",
+  in_progress: "secondary",
+  completed: "success",
+  revision_needed: "warning",
+};
+
+function StatusSelect({
+  status,
+  onChange,
+}: {
+  status: TopicStatus;
+  onChange: (status: TopicStatus) => void;
+}) {
+  return (
+    <select
+      value={status}
+      onChange={(event) => onChange(event.target.value as TopicStatus)}
+      className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-xs shadow-xs outline-none focus-visible:ring-[3px]"
+    >
+      {TOPIC_STATUSES.map((s) => (
+        <option key={s} value={s}>
+          {STATUS_LABELS[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function TopicItem({
   topic,
@@ -64,64 +110,101 @@ function TopicItem({
   const completedSubtopics = topic.subtopics.filter((t) => t.status === "completed").length;
 
   return (
-    <li>
-      <div className="topic-row">
-        <button type="button" onClick={() => reorderTopic(siblings, topic.id, "up").then(onChanged)}>
-          ↑
-        </button>
-        <button type="button" onClick={() => reorderTopic(siblings, topic.id, "down").then(onChanged)}>
-          ↓
-        </button>
+    <li className="border-border/70 border-l pl-3">
+      <div className="group flex flex-wrap items-center gap-1.5 rounded-md py-1.5">
+        <div className="flex flex-col">
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground -mb-1"
+            onClick={() => reorderTopic(siblings, topic.id, "up").then(onChanged)}
+            aria-label="Move up"
+          >
+            <ChevronUpIcon className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => reorderTopic(siblings, topic.id, "down").then(onChanged)}
+            aria-label="Move down"
+          >
+            <ChevronDownIcon className="size-3.5" />
+          </button>
+        </div>
+
         {editing ? (
-          <>
-            <input value={name} onChange={(event) => setName(event.target.value)} required />
-            <button type="button" onClick={handleRename}>
-              Save
-            </button>
-          </>
+          <div className="flex flex-1 items-center gap-1.5">
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="h-8"
+              autoFocus
+            />
+            <Button size="sm" className="h-8" onClick={handleRename}>
+              <CheckIcon />
+            </Button>
+          </div>
         ) : (
-          <span className={topic.status === "revision_needed" ? "revision-needed" : undefined}>
-            {topic.name}
-            {topic.status === "revision_needed" && " ⚠"}
-            {topic.status === "completed" && " ✓"}
-          </span>
+          <span className="flex-1 text-sm">{topic.name}</span>
         )}
-        <select
-          value={topic.status}
-          onChange={(event) =>
-            setTopicStatus(topic.id, event.target.value as TopicStatus).then(onChanged)
-          }
-        >
-          {TOPIC_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
+
+        <Badge variant={STATUS_BADGE_VARIANT[topic.status]}>
+          {topic.status === "revision_needed" && <TriangleAlertIcon />}
+          {STATUS_LABELS[topic.status]}
+        </Badge>
+        <StatusSelect
+          status={topic.status}
+          onChange={(status) => setTopicStatus(topic.id, status).then(onChanged)}
+        />
+
         {topic.subtopics.length > 0 && (
-          <span>
-            ({completedSubtopics}/{topic.subtopics.length} sub-topics completed)
+          <span className="text-muted-foreground text-xs">
+            {completedSubtopics}/{topic.subtopics.length} sub-topics
           </span>
         )}
-        <button type="button" onClick={() => setEditing((v) => !v)}>
-          Edit
-        </button>
-        <button type="button" onClick={() => setAddingChild((v) => !v)}>
-          + Sub-topic
-        </button>
-        <button type="button" onClick={handleDelete}>
-          Delete
-        </button>
+
+        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setEditing((v) => !v)}
+            aria-label="Rename"
+          >
+            <PencilIcon className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setAddingChild((v) => !v)}
+            aria-label="Add sub-topic"
+          >
+            <PlusIcon className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive size-7"
+            onClick={handleDelete}
+            aria-label="Delete"
+          >
+            <TrashIcon className="size-3.5" />
+          </Button>
+        </div>
       </div>
       {addingChild && (
-        <form onSubmit={handleAddChild}>
-          <input
+        <form onSubmit={handleAddChild} className="mb-1.5 flex gap-1.5 pl-5">
+          <Input
             value={childName}
             onChange={(event) => setChildName(event.target.value)}
             placeholder="Sub-topic name"
             required
+            className="h-8"
+            autoFocus
           />
-          <button type="submit">Add</button>
+          <Button type="submit" size="sm" className="h-8">
+            Add
+          </Button>
         </form>
       )}
       {topic.subtopics.length > 0 && (
@@ -164,51 +247,86 @@ function SubjectItem({ subject, onChanged }: { subject: SubjectNode; onChanged: 
   }
 
   return (
-    <section className="subject">
-      <div className="subject-row">
-        {editing ? (
-          <>
-            <input value={name} onChange={(event) => setName(event.target.value)} required />
-            <button type="button" onClick={handleRename}>
-              Save
-            </button>
-          </>
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-2">
+          {editing ? (
+            <div className="flex flex-1 items-center gap-1.5">
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="h-8"
+                autoFocus
+              />
+              <Button size="sm" className="h-8" onClick={handleRename}>
+                <CheckIcon />
+              </Button>
+            </div>
+          ) : (
+            <CardTitle className="flex-1 text-base">{subject.name}</CardTitle>
+          )}
+          {subject.revisionNeededTopics > 0 && (
+            <Badge variant="warning">
+              <TriangleAlertIcon />
+              {subject.revisionNeededTopics} need revision
+            </Badge>
+          )}
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => setEditing((v) => !v)}>
+              <PencilIcon className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => setAddingTopic((v) => !v)}
+            >
+              <PlusIcon className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive size-7"
+              onClick={handleDelete}
+            >
+              <TrashIcon className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <Progress value={subject.completionPercent} className="h-1.5" />
+          <span className="text-muted-foreground w-24 shrink-0 text-right text-xs tabular-nums">
+            {subject.completedTopics}/{subject.totalTopics} · {subject.completionPercent}%
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {addingTopic && (
+          <form onSubmit={handleAddTopic} className="mb-3 flex gap-1.5">
+            <Input
+              value={topicName}
+              onChange={(event) => setTopicName(event.target.value)}
+              placeholder="Topic name"
+              required
+              className="h-8"
+              autoFocus
+            />
+            <Button type="submit" size="sm" className="h-8">
+              Add
+            </Button>
+          </form>
+        )}
+        {subject.topics.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No topics yet.</p>
         ) : (
-          <h3>{subject.name}</h3>
+          <ul className="flex flex-col gap-0.5">
+            {subject.topics.map((topic) => (
+              <TopicItem key={topic.id} topic={topic} siblings={subject.topics} onChanged={onChanged} />
+            ))}
+          </ul>
         )}
-        <span>
-          {subject.completionPercent}% complete ({subject.completedTopics}/{subject.totalTopics})
-        </span>
-        {subject.revisionNeededTopics > 0 && (
-          <span className="revision-needed">{subject.revisionNeededTopics} need revision</span>
-        )}
-        <button type="button" onClick={() => setEditing((v) => !v)}>
-          Edit
-        </button>
-        <button type="button" onClick={() => setAddingTopic((v) => !v)}>
-          + Topic
-        </button>
-        <button type="button" onClick={handleDelete}>
-          Delete subject
-        </button>
-      </div>
-      {addingTopic && (
-        <form onSubmit={handleAddTopic}>
-          <input
-            value={topicName}
-            onChange={(event) => setTopicName(event.target.value)}
-            placeholder="Topic name"
-            required
-          />
-          <button type="submit">Add</button>
-        </form>
-      )}
-      <ul>
-        {subject.topics.map((topic) => (
-          <TopicItem key={topic.id} topic={topic} siblings={subject.topics} onChanged={onChanged} />
-        ))}
-      </ul>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -224,25 +342,51 @@ export function SyllabusTree() {
     refresh();
   }
 
-  if (subjects === "loading") return <p>Loading syllabus…</p>;
-
   return (
-    <div>
-      <h2>Syllabus — {overallPercent}% complete overall</h2>
-      {error && <p role="alert">{error}</p>}
-      <form onSubmit={handleAddSubject}>
-        <input
-          value={newSubject}
-          onChange={(event) => setNewSubject(event.target.value)}
-          placeholder="New subject name"
-          required
-        />
-        <button type="submit">Add subject</button>
-      </form>
-      {subjects.length === 0 && <p>No subjects yet — add one above or upload a syllabus file.</p>}
-      {subjects.map((subject) => (
-        <SubjectItem key={subject.id} subject={subject} onChanged={refresh} />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Syllabus</h2>
+          {subjects !== "loading" && subjects.length > 0 && (
+            <p className="text-muted-foreground text-sm">{overallPercent}% complete overall</p>
+          )}
+        </div>
+        <form onSubmit={handleAddSubject} className="flex gap-1.5">
+          <Input
+            value={newSubject}
+            onChange={(event) => setNewSubject(event.target.value)}
+            placeholder="New subject name"
+            required
+            className="h-9 w-48"
+          />
+          <Button type="submit" size="sm">
+            <PlusIcon /> Add subject
+          </Button>
+        </form>
+      </div>
+
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
+
+      {subjects === "loading" ? (
+        <div className={cn("flex flex-col gap-3")}>
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : subjects.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No subjects yet — add one above or upload a syllabus file.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {subjects.map((subject) => (
+            <SubjectItem key={subject.id} subject={subject} onChanged={refresh} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
