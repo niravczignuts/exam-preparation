@@ -33,6 +33,11 @@ async function getMessagingInstance(): Promise<Messaging | null> {
  * Requests notification permission and returns an FCM registration token,
  * or null if unsupported/denied. Send the token to the backend's
  * device-token endpoint (KAN-72) so scheduled jobs can push to this device.
+ *
+ * Reuses the service worker registered at startup (see registerServiceWorker
+ * in main.tsx, KAN-64) instead of registering a second one — the same file
+ * now also handles offline caching, and a page can only be reliably
+ * controlled by one service worker per scope.
  */
 export async function requestPushToken(): Promise<string | null> {
   const messaging = await getMessagingInstance();
@@ -41,7 +46,7 @@ export async function requestPushToken(): Promise<string | null> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return null;
 
-  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+  const registration = await navigator.serviceWorker.ready;
   return getToken(messaging, {
     vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
     serviceWorkerRegistration: registration,
