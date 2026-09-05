@@ -1,5 +1,14 @@
-import { GraduationCapIcon, LanguagesIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import {
+  BookOpenIcon,
+  ChevronDownIcon,
+  GraduationCapIcon,
+  LanguagesIcon,
+  MonitorIcon,
+  MoonIcon,
+  SettingsIcon,
+  SunIcon,
+} from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 
 import { useLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -12,16 +21,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const NAV_LINKS = [
+const PRIMARY_LINKS = [
   { to: "/", key: "navHome" as const, end: true },
-  { to: "/syllabus", key: "navSyllabus" as const, end: false },
-  { to: "/pyq", key: "navPyq" as const, end: false },
-  { to: "/practice", key: "navPractice" as const, end: false },
-  { to: "/timetable", key: "navTimetable" as const, end: false },
-  { to: "/mock-test", key: "navMockTest" as const, end: false },
-  { to: "/revision", key: "navRevision" as const, end: false },
+  { to: "/dashboard", key: "navDashboard" as const, end: false },
   { to: "/daily-target", key: "navDailyTarget" as const, end: false },
-  { to: "/settings", key: "navSettings" as const, end: false },
+  { to: "/timetable", key: "navTimetable" as const, end: false },
+];
+
+const STUDY_LINKS = [
+  { to: "/syllabus", key: "navSyllabus" as const },
+  { to: "/pyq", key: "navPyq" as const },
+  { to: "/practice", key: "navPractice" as const },
+  { to: "/mock-test", key: "navMockTest" as const },
+  { to: "/revision", key: "navRevision" as const },
 ];
 
 function ThemeToggle() {
@@ -50,8 +62,18 @@ function ThemeToggle() {
   );
 }
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+    isActive
+      ? "bg-accent text-accent-foreground"
+      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+  );
+
 export function NavBar() {
   const { t, language, setLanguage } = useLanguage();
+  const location = useLocation();
+  const isStudySectionActive = STUDY_LINKS.some((l) => location.pathname.startsWith(l.to));
 
   return (
     <header className="border-border/60 bg-background/80 sticky top-0 z-40 border-b backdrop-blur-sm">
@@ -64,24 +86,45 @@ export function NavBar() {
         </div>
 
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {NAV_LINKS.map(({ to, key, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                cn(
-                  "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-                )
-              }
-            >
+          {PRIMARY_LINKS.map(({ to, key, end }) => (
+            <NavLink key={to} to={to} end={end} className={navLinkClass}>
               {t(key)}
             </NavLink>
           ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-auto shrink-0 gap-1 rounded-md px-3 py-1.5 text-sm font-medium",
+                  isStudySectionActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                )}
+              >
+                <BookOpenIcon className="size-3.5" />
+                {t("navStudy")}
+                <ChevronDownIcon className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {STUDY_LINKS.map(({ to, key }) => (
+                <DropdownMenuItem key={to} asChild>
+                  <NavLink to={to} className="w-full">
+                    {t(key)}
+                  </NavLink>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
+
+        <Button variant="ghost" size="icon" asChild>
+          <NavLink to="/settings" aria-label={t("navSettings")}>
+            <SettingsIcon />
+          </NavLink>
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

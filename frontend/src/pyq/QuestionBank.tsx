@@ -101,10 +101,16 @@ function EditQuestionDialog({
   );
 }
 
-export function QuestionBank({ subjects }: { subjects: SubjectNode[] }) {
+export function QuestionBank({
+  subjects,
+  initialTopicId = "",
+}: {
+  subjects: SubjectNode[];
+  initialTopicId?: string;
+}) {
   const { questions, error, refresh } = useQuestions();
   const [editing, setEditing] = useState<Question | null>(null);
-  const [filterTopicId, setFilterTopicId] = useState("");
+  const [filterTopicId, setFilterTopicId] = useState(initialTopicId);
 
   const topicOptions = useMemo(() => flattenTopics(subjects), [subjects]);
 

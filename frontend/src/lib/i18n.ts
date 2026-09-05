@@ -8,6 +8,8 @@ export type Language = "gu" | "en";
 const strings = {
   gu: {
     navHome: "હોમ",
+    navDashboard: "ડેશબોર્ડ",
+    navStudy: "અભ્યાસ",
     navSyllabus: "અભ્યાસક્રમ",
     navPyq: "પ્રશ્નો",
     navPractice: "પ્રેક્ટિસ",
@@ -44,6 +46,8 @@ const strings = {
   },
   en: {
     navHome: "Home",
+    navDashboard: "Dashboard",
+    navStudy: "Study",
     navSyllabus: "Syllabus",
     navPyq: "Q&A",
     navPractice: "Practice",
