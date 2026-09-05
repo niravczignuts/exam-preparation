@@ -6,12 +6,12 @@ importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "REPLACE_WITH_VITE_FIREBASE_API_KEY",
-  authDomain: "REPLACE_WITH_VITE_FIREBASE_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_VITE_FIREBASE_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_VITE_FIREBASE_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_VITE_FIREBASE_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_VITE_FIREBASE_APP_ID",
+  apiKey: "AIzaSyDgqpWm7lMmkZ2UJngzw2ichy2ZbtG7qbY",
+  authDomain: "exam-preparation-e3fad.firebaseapp.com",
+  projectId: "exam-preparation-e3fad",
+  storageBucket: "exam-preparation-e3fad.firebasestorage.app",
+  messagingSenderId: "1079110780487",
+  appId: "1:1079110780487:web:b14e0a4b9d2e08cee59362",
 });
 
 const messaging = firebase.messaging();
