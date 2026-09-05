@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { requestPushToken } from "./firebase";
+import { onForegroundMessage, requestPushToken } from "./firebase";
 
 function App() {
   const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "unreachable">("checking");
@@ -18,6 +18,15 @@ function App() {
     try {
       const token = await requestPushToken();
       setPushToken(token);
+      if (token) {
+        // Only fires while this tab is focused — FCM routes to the service
+        // worker's background handler otherwise. Shown manually since the
+        // browser won't auto-display a notification for a focused tab.
+        onForegroundMessage((payload) => {
+          const { title, body } = payload.notification ?? {};
+          new Notification(title ?? "Exam Prep App", { body: body ?? "" });
+        });
+      }
     } catch (err) {
       console.error("requestPushToken failed", err);
       setPushToken("error");
