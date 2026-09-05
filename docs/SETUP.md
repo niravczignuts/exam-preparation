@@ -12,7 +12,7 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql` and `0002_storage_buckets.sql`.
+4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0003_sprint3.sql` (syllabus uploads + the exam-countdown time column).
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
 
 ## 3. Backend on Render (KAN-70, KAN-73)
@@ -44,6 +44,15 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 4. Project Settings → Service Accounts → Generate new private key → this JSON file is a real secret. Never commit it (it's gitignored). Use it locally as `backend/.env`'s `FIREBASE_SERVICE_ACCOUNT_PATH`, and upload it to Render as a Secret File (step 3 above) in production.
 5. **End-to-end test** (this is the one piece of KAN-72's acceptance criteria nobody but you can complete, since it needs a live Firebase project + a real browser): once both frontend and backend are deployed, open the deployed site, grant notification permission, and confirm a registration token appears (wire that up to a `device_tokens` insert — not yet built, this is scaffolding only). Then call `app.fcm.send_push(token, "Test", "Hello")` from a Python shell against the deployed backend and confirm the browser receives it.
 
+## 6. Supabase Auth (Sprint 3)
+
+The syllabus features (KAN-18..22) require a real signed-in user — every table's RLS policy checks `auth.uid()`.
+
+1. Supabase Dashboard → Authentication → Providers → make sure **Email** is enabled (it is by default).
+2. For local/dev testing, Authentication → Settings → turn off "Confirm email" so `supabase.auth.signUp()` returns an active session immediately instead of requiring an email link (leave it on in production).
+3. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the token the frontend sends on `POST /syllabus/uploads`.
+4. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
+
 ## What's genuinely done vs. what needs you
 
 | Ticket | Code/config done | Needs your manual action |
@@ -54,3 +63,5 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 | KAN-71 | Frontend scaffold + netlify.toml | Create the Netlify site, link repo |
 | KAN-72 | Client + backend FCM integration code | Create the Firebase project, get credentials, run the live test |
 | KAN-73 | Job script + Render cron definition | Deploy so it actually runs on schedule |
+| KAN-18..22 | Syllabus CRUD, upload/parse endpoint, completion tracking | Enable Supabase Auth email provider, set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` |
+| KAN-50, KAN-51 | Countdown UI, multi-stage support | — |
