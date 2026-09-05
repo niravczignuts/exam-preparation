@@ -2,23 +2,11 @@ from __future__ import annotations
 
 import base64
 import io
-from functools import lru_cache
 
-import anthropic
 from docx import Document
 from pydantic import BaseModel, Field
 
-from app.config import settings
-
-
-@lru_cache
-def _client() -> anthropic.Anthropic:
-    if not settings.anthropic_api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not set. Get one from console.anthropic.com "
-            "and add it to backend/.env (see backend/.env.example)."
-        )
-    return anthropic.Anthropic(api_key=settings.anthropic_api_key)
+from app.anthropic_client import get_anthropic_client as _client
 
 
 class SubTopic(BaseModel):

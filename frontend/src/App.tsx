@@ -6,6 +6,7 @@ import { ThemeProvider } from "./lib/theme";
 import { SettingsProvider } from "./hooks/useSettings";
 import { Toaster } from "./components/ui/sonner";
 import { NavBar } from "./components/NavBar";
+import { DailyTarget } from "./routes/DailyTarget";
 import { Home } from "./routes/Home";
 import { MockTest } from "./routes/MockTest";
 import { MockTestReport } from "./routes/MockTestReport";
@@ -61,6 +62,7 @@ function App() {
                   <Route path="/mock-test/:attemptId/run" element={<MockTestRunner />} />
                   <Route path="/mock-test/:attemptId/report" element={<MockTestReport />} />
                   <Route path="/revision" element={<Revision />} />
+                  <Route path="/daily-target" element={<DailyTarget />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>

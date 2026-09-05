@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { to: "/timetable", key: "navTimetable" as const, end: false },
   { to: "/mock-test", key: "navMockTest" as const, end: false },
   { to: "/revision", key: "navRevision" as const, end: false },
+  { to: "/daily-target", key: "navDailyTarget" as const, end: false },
   { to: "/settings", key: "navSettings" as const, end: false },
 ];
 
