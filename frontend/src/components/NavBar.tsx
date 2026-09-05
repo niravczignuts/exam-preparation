@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
+import { useAiFeaturesEnabled } from "@/lib/aiFeatures";
 import { useLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -73,7 +74,13 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export function NavBar() {
   const { t, language, setLanguage } = useLanguage();
   const location = useLocation();
-  const isStudySectionActive = STUDY_LINKS.some((l) => location.pathname.startsWith(l.to));
+  const aiFeaturesEnabled = useAiFeaturesEnabled();
+  // Ask a Doubt only appears once the backend actually has an OpenAI key
+  // configured — otherwise it'd be a nav link to a control that just errors.
+  const studyLinks = aiFeaturesEnabled
+    ? [...STUDY_LINKS, { to: "/doubts", key: "navDoubts" as const }]
+    : STUDY_LINKS;
+  const isStudySectionActive = studyLinks.some((l) => location.pathname.startsWith(l.to));
 
   return (
     <header className="border-border/60 bg-background/80 sticky top-0 z-40 border-b backdrop-blur-sm">
@@ -109,7 +116,7 @@ export function NavBar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              {STUDY_LINKS.map(({ to, key }) => (
+              {studyLinks.map(({ to, key }) => (
                 <DropdownMenuItem key={to} asChild>
                   <NavLink to={to} className="w-full">
                     {t(key)}

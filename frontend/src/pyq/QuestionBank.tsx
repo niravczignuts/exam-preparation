@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { PencilIcon, TrashIcon } from "lucide-react";
+import { PencilIcon, SearchIcon, TrashIcon, TriangleAlertIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAiFeaturesEnabled } from "@/lib/aiFeatures";
 import type { SubjectNode } from "@/syllabus/useSyllabusTree";
 import { flattenTopics } from "@/syllabus/flattenTopics";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteQuestion, updateQuestion, useQuestions, type Question } from "./usePyqQuestions";
+import { deleteQuestion, searchQuestions, updateQuestion, useQuestions, type Question } from "./usePyqQuestions";
 
 function EditQuestionDialog({
   question,
@@ -111,6 +113,11 @@ export function QuestionBank({
   const { questions, error, refresh } = useQuestions();
   const [editing, setEditing] = useState<Question | null>(null);
   const [filterTopicId, setFilterTopicId] = useState(initialTopicId);
+  const aiFeaturesEnabled = useAiFeaturesEnabled();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchedIds, setSearchedIds] = useState<string[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [hideDuplicates, setHideDuplicates] = useState(false);
 
   const topicOptions = useMemo(() => flattenTopics(subjects), [subjects]);
 
@@ -119,6 +126,23 @@ export function QuestionBank({
     const { error } = await deleteQuestion(id);
     if (error) toast.error(error);
     refresh();
+  }
+
+  async function handleSearch() {
+    const query = searchTerm.trim();
+    if (!query) {
+      setSearchedIds(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      const results = await searchQuestions(query, filterTopicId || undefined);
+      setSearchedIds(results.map((r) => r.id));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setSearching(false);
+    }
   }
 
   if (questions === "loading") {
@@ -130,9 +154,16 @@ export function QuestionBank({
     );
   }
 
-  const filtered = filterTopicId
-    ? questions.filter((q) => q.topic_id === filterTopicId)
-    : questions;
+  let filtered: Question[];
+  if (searchedIds !== null) {
+    const byId = new Map(questions.map((q) => [q.id, q]));
+    filtered = searchedIds.map((id) => byId.get(id)).filter((q): q is Question => Boolean(q));
+  } else {
+    filtered = filterTopicId ? questions.filter((q) => q.topic_id === filterTopicId) : questions;
+  }
+  if (hideDuplicates) {
+    filtered = filtered.filter((q) => !q.duplicate_of);
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -140,21 +171,58 @@ export function QuestionBank({
         <h2 className="text-lg font-semibold">
           Q&amp;A bank <span className="text-muted-foreground font-normal">({questions.length})</span>
         </h2>
-        {topicOptions.length > 0 && (
-          <select
-            value={filterTopicId}
-            onChange={(e) => setFilterTopicId(e.target.value)}
-            className="border-input bg-background h-8 rounded-md border px-2 text-xs shadow-xs outline-none"
-          >
-            <option value="">All topics</option>
-            {topicOptions.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <input
+              type="checkbox"
+              checked={hideDuplicates}
+              onChange={(e) => setHideDuplicates(e.target.checked)}
+            />
+            Hide duplicates
+          </label>
+          {topicOptions.length > 0 && (
+            <select
+              value={filterTopicId}
+              onChange={(e) => setFilterTopicId(e.target.value)}
+              className="border-input bg-background h-8 rounded-md border px-2 text-xs shadow-xs outline-none"
+            >
+              <option value="">All topics</option>
+              {topicOptions.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
+
+      {aiFeaturesEnabled && (
+        <div className="flex gap-2">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="Search by meaning (e.g. 'depreciation methods')…"
+            className="h-8 text-xs"
+          />
+          <Button size="sm" variant="outline" onClick={handleSearch} disabled={searching}>
+            <SearchIcon className="size-3.5" /> {searching ? "Searching…" : "Search"}
+          </Button>
+          {searchedIds !== null && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setSearchTerm("");
+                setSearchedIds(null);
+              }}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="text-destructive text-sm">
@@ -201,8 +269,14 @@ export function QuestionBank({
                     <Badge variant="outline">Untagged</Badge>
                   )}
                   {question.exam_year && <Badge variant="outline">{question.exam_year}</Badge>}
+                  {question.language && <Badge variant="outline">{question.language.toUpperCase()}</Badge>}
                   {question.options.length > 0 && (
                     <Badge variant="outline">{question.options.length} options</Badge>
+                  )}
+                  {question.duplicate_of && (
+                    <Badge variant="outline" className="text-warning border-warning/50 gap-1">
+                      <TriangleAlertIcon className="size-3" /> Possible duplicate
+                    </Badge>
                   )}
                 </div>
               </CardContent>

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
-import { CheckIcon, ClockIcon, XIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CheckIcon, ClockIcon, MessageCircleQuestionIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAiFeaturesEnabled } from "@/lib/aiFeatures";
 import {
   isDue,
   reviewRevisionItem,
@@ -16,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 function ReviewCard({ item, onDone }: { item: RevisionItem; onDone: () => void }) {
+  const navigate = useNavigate();
+  const aiFeaturesEnabled = useAiFeaturesEnabled();
   const [selected, setSelected] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const isMcq = item.questions.options.length > 0;
@@ -45,7 +49,23 @@ function ReviewCard({ item, onDone }: { item: RevisionItem; onDone: () => void }
           </Badge>
           <Badge variant="outline">Stage {item.interval_stage}d</Badge>
         </div>
-        <p className="font-medium">{item.questions.question_text}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-medium">{item.questions.question_text}</p>
+          {aiFeaturesEnabled && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={() =>
+                navigate("/doubts", {
+                  state: { prefill: `Can you explain this question?\n\n${item.questions.question_text}` },
+                })
+              }
+            >
+              <MessageCircleQuestionIcon /> Ask a doubt
+            </Button>
+          )}
+        </div>
 
         {isMcq ? (
           <div className="flex flex-col gap-2">

@@ -51,6 +51,7 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 
 1. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the Supabase Auth token (anonymous session included) the frontend sends on `POST /syllabus/uploads`.
 2. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
+3. **Optional**: get an API key from platform.openai.com and set `backend/.env`'s `OPENAI_API_KEY` (and the Render env var) — powers the doubt-solving chat assistant, Q&A bank semantic search/duplicate detection, and voice check-in transcription. The app runs fine without it; those three features just stay hidden until it's set. After setting it in production, run the one-time backfill once: `python -m app.jobs.backfill_question_embeddings` (embeds any questions uploaded before the key was added).
 
 ## What's genuinely done vs. what needs you
 

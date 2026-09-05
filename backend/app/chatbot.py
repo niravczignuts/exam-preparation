@@ -24,14 +24,48 @@ def _tone_instruction(current_streak: int, recent_completion_rate: float) -> str
     return "The user has been making steady, ordinary progress. Be neutral and informative."
 
 
+def _goal_context(weak_topics: list[dict] | None, days_until_exam: int | None) -> str:
+    """Folds the user's real history (accuracy by topic, time to exam) into the
+    prompt so the check-in can actually guide them toward their goal instead of
+    just logging today's status. Returns an empty string when there's nothing
+    concrete to report yet (e.g. a brand-new user with no attempts/exam date) —
+    never invent a nudge out of nothing."""
+    lines = []
+    if days_until_exam is not None:
+        lines.append(f"Their exam is in {days_until_exam} day(s).")
+    if weak_topics:
+        topics_desc = ", ".join(
+            f"{t['topic_name']} ({round(t['accuracy'] * 100)}% accuracy)" for t in weak_topics
+        )
+        lines.append(f"Their weakest topics recently (lowest practice accuracy) are: {topics_desc}.")
+    if not lines:
+        return ""
+    return (
+        " ".join(lines)
+        + " Weave a brief, natural nudge toward one of these into the message if it fits — "
+        "don't force it if today's target already covers them, and don't overwhelm the "
+        "message with stats; one specific, encouraging mention is enough."
+    )
+
+
 def generate_checkin_opening(
-    *, target_description: str, current_streak: int, recent_completion_rate: float, language: str
+    *,
+    target_description: str,
+    current_streak: int,
+    recent_completion_rate: float,
+    language: str,
+    weak_topics: list[dict] | None = None,
+    days_until_exam: int | None = None,
 ) -> str:
     """KAN-39/42/43/44: the opening message of the end-of-day check-in — greets the
     user, asks completion status + questions solved, and includes 1-2 recall
-    questions grounded in what today's target actually was."""
+    questions grounded in what today's target actually was. Also references the
+    user's real progress history (weak topics, days until exam) when available,
+    so this genuinely guides them toward their goal rather than just checking a
+    box."""
     lang_name = _LANGUAGE_NAMES.get(language, "English")
     tone = _tone_instruction(current_streak, recent_completion_rate)
+    goal_context = _goal_context(weak_topics, days_until_exam)
 
     prompt = (
         f"You are a friendly study-mentor chatbot for a GSET Commerce exam aspirant. "
@@ -39,6 +73,7 @@ def generate_checkin_opening(
         f"3-5 short sentences.\n\n"
         f"Today's target was: \"{target_description}\"\n\n"
         f"{tone}\n\n"
+        f"{goal_context}\n\n"
         "The message must:\n"
         "1. Greet them and ask whether they completed today's target (they'll answer via "
         "buttons in the UI, so just ask naturally — don't list options).\n"

@@ -25,6 +25,17 @@ class Subject(BaseModel):
 
 class SyllabusTree(BaseModel):
     subjects: list[Subject]
+    language: str | None = Field(
+        default=None,
+        description="ISO 639-1 code (e.g. 'gu', 'en') for the primary language of the "
+        "source document. Every subject/topic name in this tree must be written in "
+        "that SAME language — never translate to English.",
+    )
+    exam_date_guess: str | None = Field(
+        default=None,
+        description="An exam date (YYYY-MM-DD) explicitly stated in the document, or "
+        "null if none is mentioned. Never guess/estimate one that isn't stated.",
+    )
 
 
 _PROMPT = (
@@ -33,11 +44,16 @@ _PROMPT = (
     "hierarchy. Use the document's own headings/numbering to decide the "
     "hierarchy. Every subject must have at least one topic; a topic may have "
     "zero sub-topics if the document doesn't break it down further. Do not "
-    "invent content that isn't in the document."
+    "invent content that isn't in the document.\n\n"
+    "Detect the primary language of the document and set `language` to its ISO "
+    "639-1 code; write every subject/topic name in that SAME language — never "
+    "translate to English. If the document explicitly states an exam date, set "
+    "`exam_date_guess`; otherwise leave it null."
 )
 
 _IMAGE_MEDIA_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 _DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_PLAIN_TEXT_MEDIA_TYPE = "text/plain"
 
 
 def _extract_docx_text(file_bytes: bytes) -> str:
@@ -45,19 +61,20 @@ def _extract_docx_text(file_bytes: bytes) -> str:
     return "\n".join(p.text for p in document.paragraphs if p.text.strip())
 
 
-def structure_syllabus(file_bytes: bytes, content_type: str, filename: str) -> SyllabusTree:
-    """Turns an uploaded syllabus file into a structured tree via one LLM call.
+def _build_content_blocks(file_bytes: bytes, content_type: str, filename: str, prompt: str) -> list[dict]:
+    """Shared by structure_syllabus/structure_pyq_paper: turns a file into the
+    content blocks for a Claude messages.parse call. PDFs and images go to
+    Claude directly (native document/vision understanding). DOCX and
+    "text/plain" (already-extracted text — used by web-search ingestion for
+    HTML pages via app/web_ingest.py's extract_readable_text) are sent as a
+    plain text block, since there's no native input type for either.
 
-    PDFs and images are sent to Claude directly (native document/vision
-    understanding — no OCR library needed, and scanned PDFs work too). DOCX
-    has no native input type, so its text is extracted first.
-
-    Raises ValueError on an unsupported file type or a result the model
-    couldn't structure — callers must surface this as a clear failure
-    (KAN-19 AC), never fall back to a silently empty tree.
+    Raises ValueError on an unsupported file type or unextractable text —
+    callers must surface this as a clear failure, never fall back to
+    silently empty content.
     """
     if content_type == "application/pdf":
-        content = [
+        return [
             {
                 "type": "document",
                 "source": {
@@ -66,10 +83,10 @@ def structure_syllabus(file_bytes: bytes, content_type: str, filename: str) -> S
                     "data": base64.standard_b64encode(file_bytes).decode(),
                 },
             },
-            {"type": "text", "text": _PROMPT},
+            {"type": "text", "text": prompt},
         ]
-    elif content_type in _IMAGE_MEDIA_TYPES:
-        content = [
+    if content_type in _IMAGE_MEDIA_TYPES:
+        return [
             {
                 "type": "image",
                 "source": {
@@ -78,15 +95,29 @@ def structure_syllabus(file_bytes: bytes, content_type: str, filename: str) -> S
                     "data": base64.standard_b64encode(file_bytes).decode(),
                 },
             },
-            {"type": "text", "text": _PROMPT},
+            {"type": "text", "text": prompt},
         ]
-    elif content_type == _DOCX_MEDIA_TYPE or filename.lower().endswith(".docx"):
+    if content_type == _DOCX_MEDIA_TYPE or filename.lower().endswith(".docx"):
         text = _extract_docx_text(file_bytes)
         if not text.strip():
             raise ValueError("The .docx file has no extractable text")
-        content = [{"type": "text", "text": f"{_PROMPT}\n\n---\n\n{text}"}]
-    else:
-        raise ValueError(f"Unsupported file type: {content_type or filename}")
+        return [{"type": "text", "text": f"{prompt}\n\n---\n\n{text}"}]
+    if content_type == _PLAIN_TEXT_MEDIA_TYPE:
+        text = file_bytes.decode("utf-8", errors="ignore")
+        if not text.strip():
+            raise ValueError("No extractable text")
+        return [{"type": "text", "text": f"{prompt}\n\n---\n\n{text}"}]
+    raise ValueError(f"Unsupported file type: {content_type or filename}")
+
+
+def structure_syllabus(file_bytes: bytes, content_type: str, filename: str) -> SyllabusTree:
+    """Turns an uploaded syllabus file into a structured tree via one LLM call.
+
+    Raises ValueError on an unsupported file type or a result the model
+    couldn't structure — callers must surface this as a clear failure
+    (KAN-19 AC), never fall back to a silently empty tree.
+    """
+    content = _build_content_blocks(file_bytes, content_type, filename, _PROMPT)
 
     response = _client().messages.parse(
         model="claude-sonnet-5",
@@ -127,10 +158,20 @@ class Question(BaseModel):
         description="Best-guess name of which of the user's existing topics (under that "
         "subject) this question belongs to (pick from the provided list verbatim), or null.",
     )
+    language: str | None = Field(
+        default=None,
+        description="ISO 639-1 code for THIS question's language (a paper can "
+        "legitimately mix languages across questions). Write correct_answer/explanation "
+        "in that SAME language — never translate to English.",
+    )
 
 
 class PyqPaper(BaseModel):
     questions: list[Question]
+    language: str | None = Field(
+        default=None,
+        description="ISO 639-1 code for the paper's overall/dominant language.",
+    )
 
 
 _PYQ_PROMPT_TEMPLATE = (
@@ -143,9 +184,13 @@ _PYQ_PROMPT_TEMPLATE = (
     "leave a question without an answer.\n"
     "- Add a brief `explanation` for the answer.\n"
     "- Guess which existing subject/topic (from the lists below) the question best fits, using "
-    "the exact name from the list, or null if none fit reasonably.\n\n"
+    "the exact name from the list, or null if none fit reasonably.\n"
+    "- Detect this question's language (ISO 639-1 code) and write its "
+    "`correct_answer`/`explanation` in that SAME language — never translate to "
+    "English, even if the rest of your reasoning is in English.\n\n"
     "Existing subjects and topics for this user:\n{catalog}\n\n"
-    "Do not invent questions that aren't in the document."
+    "Do not invent questions that aren't in the document. Set `language` (top level) "
+    "to the paper's overall dominant language."
 )
 
 
@@ -169,42 +214,11 @@ def structure_pyq_paper(
     used so the model can best-guess a tag for each question (KAN-26) — callers resolve the
     guessed names back to ids since names alone aren't unique/reliable enough to store.
 
-    Same native-document/vision/DOCX-text handling as structure_syllabus; raises ValueError
-    on an unsupported file type or no extractable questions.
+    Same file-type handling as structure_syllabus (via _build_content_blocks);
+    raises ValueError on an unsupported file type or no extractable questions.
     """
     prompt = _PYQ_PROMPT_TEMPLATE.format(catalog=_format_catalog(catalog))
-
-    if content_type == "application/pdf":
-        content = [
-            {
-                "type": "document",
-                "source": {
-                    "type": "base64",
-                    "media_type": "application/pdf",
-                    "data": base64.standard_b64encode(file_bytes).decode(),
-                },
-            },
-            {"type": "text", "text": prompt},
-        ]
-    elif content_type in _IMAGE_MEDIA_TYPES:
-        content = [
-            {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": content_type,
-                    "data": base64.standard_b64encode(file_bytes).decode(),
-                },
-            },
-            {"type": "text", "text": prompt},
-        ]
-    elif content_type == _DOCX_MEDIA_TYPE or filename.lower().endswith(".docx"):
-        text = _extract_docx_text(file_bytes)
-        if not text.strip():
-            raise ValueError("The .docx file has no extractable text")
-        content = [{"type": "text", "text": f"{prompt}\n\n---\n\n{text}"}]
-    else:
-        raise ValueError(f"Unsupported file type: {content_type or filename}")
+    content = _build_content_blocks(file_bytes, content_type, filename, prompt)
 
     response = _client().messages.parse(
         model="claude-sonnet-5",

@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # Anthropic API key for LLM-based syllabus parsing (KAN-19).
     anthropic_api_key: str = ""
 
+    # OpenAI API key for the doubt-solving chat assistant, Q&A bank semantic
+    # search/dedup, and voice check-in transcription. Optional — every one of
+    # those features stays hidden/disabled (not broken) if this is left blank.
+    openai_api_key: str = ""
+
     # Path to the Firebase service account JSON (KAN-72). Never commit the
     # file itself — mount it as a secret file or paste its contents into this
     # env var's target platform (Render "Secret Files") at deploy time.

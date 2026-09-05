@@ -2,6 +2,33 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getCurrentUserId, supabase } from "@/lib/supabaseClient";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+async function authHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Not signed in");
+  return { Authorization: `Bearer ${token}` };
+}
+
+/** Semantic ("search by meaning") search over the Q&A bank — goes through the
+ * backend rather than direct-to-Supabase (unlike the rest of this file's reads)
+ * because generating the query embedding needs the OpenAI key. Only called
+ * when useAiFeaturesEnabled() is true. */
+export async function searchQuestions(query: string, topicId?: string): Promise<QuestionSearchResult[]> {
+  const params = new URLSearchParams({ q: query });
+  if (topicId) params.set("topic_id", topicId);
+  const response = await fetch(`${API_BASE}/pyq/questions/search?${params}`, {
+    headers: await authHeader(),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Search failed (${response.status})`);
+  }
+  const data = await response.json();
+  return data.results as QuestionSearchResult[];
+}
+
 export interface Question {
   id: string;
   topic_id: string | null;
@@ -12,7 +39,23 @@ export interface Question {
   explanation: string | null;
   exam_year: number | null;
   created_at: string;
+  // Set only when the semantic-dedup step ran at upload time (needs
+  // OPENAI_API_KEY configured) and found a close match — see
+  // backend/app/embeddings.py's embed_and_dedup.
+  duplicate_of: string | null;
+  // Detected by the parsing model (backend/app/parsing.py) — null for
+  // questions uploaded before this field existed. Never translated: a
+  // Gujarati source keeps a Gujarati answer/explanation.
+  language: string | null;
   topics: { name: string; subjects: { name: string } | null } | null;
+}
+
+export interface QuestionSearchResult {
+  id: string;
+  question_text: string;
+  topic_id: string | null;
+  exam_year: number | null;
+  similarity: number;
 }
 
 export function useQuestions() {

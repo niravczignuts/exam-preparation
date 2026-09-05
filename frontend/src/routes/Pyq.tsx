@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PlayIcon } from "lucide-react";
 
+import { FindMaterialCard } from "@/materials/FindMaterialCard";
 import { useSyllabusTree } from "@/syllabus/useSyllabusTree";
 import { PyqUpload } from "@/pyq/PyqUpload";
 import { QuestionBank } from "@/pyq/QuestionBank";
@@ -30,6 +31,7 @@ export function Pyq() {
       </div>
 
       <PyqUpload onUploaded={() => setRefreshKey((k) => k + 1)} />
+      <FindMaterialCard kind="pyq" onIngested={() => setRefreshKey((k) => k + 1)} />
       <QuestionBank
         key={refreshKey}
         subjects={subjects === "loading" ? [] : subjects}

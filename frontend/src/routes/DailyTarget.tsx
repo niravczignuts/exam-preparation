@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { FlameIcon, PencilIcon, SendIcon, TrophyIcon } from "lucide-react";
+import { FlameIcon, MicIcon, PencilIcon, SendIcon, SquareIcon, TrophyIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAiFeaturesEnabled } from "@/lib/aiFeatures";
 import { useLanguage } from "@/lib/i18n";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import {
   createTodaysTarget,
   updateTarget,
@@ -10,7 +12,12 @@ import {
   useTodaysTarget,
   useWeeklyCompletion,
 } from "@/dailytarget/useDailyTarget";
-import { finishCheckin, startCheckin, useTodaysCheckin } from "@/dailytarget/useCheckin";
+import {
+  finishCheckin,
+  startCheckin,
+  transcribeCheckinAudio,
+  useTodaysCheckin,
+} from "@/dailytarget/useCheckin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,11 +109,35 @@ function EditTargetDialog({ targetId, description, onSaved }: { targetId: string
 function CheckinFlow({ targetId, onFinished }: { targetId: string; onFinished: () => void }) {
   const { language } = useLanguage();
   const { checkin, refresh } = useTodaysCheckin();
+  const aiFeaturesEnabled = useAiFeaturesEnabled();
+  const { isRecording, start: startRecording, stop: stopRecording } = useVoiceRecorder();
   const [starting, setStarting] = useState(false);
   const [status, setStatus] = useState<"completed" | "partially_completed" | "missed" | null>(null);
   const [questionsSolved, setQuestionsSolved] = useState(0);
   const [recallAnswers, setRecallAnswers] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+
+  async function handleMicClick() {
+    if (isRecording) {
+      setTranscribing(true);
+      try {
+        const audio = await stopRecording();
+        const text = await transcribeCheckinAudio(audio);
+        setRecallAnswers((prev) => (prev ? `${prev} ${text}` : text));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not transcribe audio");
+      } finally {
+        setTranscribing(false);
+      }
+      return;
+    }
+    try {
+      await startRecording();
+    } catch {
+      toast.error("Couldn't access the microphone — check your browser's site settings.");
+    }
+  }
 
   async function handleStart() {
     setStarting(true);
@@ -194,7 +225,27 @@ function CheckinFlow({ targetId, onFinished }: { targetId: string; onFinished: (
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Your answers to the recall question(s)</Label>
-              <Textarea value={recallAnswers} onChange={(e) => setRecallAnswers(e.target.value)} />
+              <div className="flex gap-2">
+                <Textarea
+                  value={recallAnswers}
+                  onChange={(e) => setRecallAnswers(e.target.value)}
+                  className="flex-1"
+                />
+                {aiFeaturesEnabled && (
+                  <Button
+                    type="button"
+                    variant={isRecording ? "destructive" : "outline"}
+                    size="icon"
+                    onClick={handleMicClick}
+                    disabled={transcribing}
+                    title={isRecording ? "Stop recording" : "Speak your answer instead"}
+                    className="h-auto shrink-0"
+                  >
+                    {isRecording ? <SquareIcon /> : <MicIcon />}
+                  </Button>
+                )}
+              </div>
+              {transcribing && <p className="text-muted-foreground text-xs">Transcribing…</p>}
             </div>
             <Button onClick={handleSubmit} disabled={!status || submitting} className="w-fit">
               Send

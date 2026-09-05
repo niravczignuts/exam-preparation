@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import chatbot, health, notifications, pyq, syllabus
+from app.routers import chatbot, doubts, health, materials, notifications, pyq, syllabus
 
 app = FastAPI(title="Exam Prep API")
 
@@ -19,3 +19,5 @@ app.include_router(notifications.router)
 app.include_router(syllabus.router)
 app.include_router(pyq.router)
 app.include_router(chatbot.router)
+app.include_router(doubts.router)
+app.include_router(materials.router)

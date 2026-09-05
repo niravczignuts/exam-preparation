@@ -92,3 +92,27 @@ export async function finishCheckin(params: {
   const data = await response.json();
   return { message: data.message, currentStreak: data.current_streak, longestStreak: data.longest_streak };
 }
+
+/** Voice check-ins (Whisper) — an optional alternative to typing the recall
+ * answers textarea. Doesn't reuse authHeader() since that sets a JSON
+ * Content-Type, which would break the multipart FormData boundary here. */
+export async function transcribeCheckinAudio(audio: Blob): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Not signed in");
+
+  const formData = new FormData();
+  formData.append("audio", audio, "recording.webm");
+
+  const response = await fetch(`${API_BASE}/chatbot/checkin/transcribe`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? `Transcription failed (${response.status})`);
+  }
+  const result = await response.json();
+  return result.text;
+}
