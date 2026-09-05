@@ -8,6 +8,7 @@ export type Language = "gu" | "en";
 const strings = {
   gu: {
     navHome: "હોમ",
+    navSyllabus: "અભ્યાસક્રમ",
     navSettings: "સેટિંગ્સ",
     settingsTitle: "સેટિંગ્સ",
     language: "ભાષા",
@@ -36,6 +37,7 @@ const strings = {
   },
   en: {
     navHome: "Home",
+    navSyllabus: "Syllabus",
     navSettings: "Settings",
     settingsTitle: "Settings",
     language: "Language",

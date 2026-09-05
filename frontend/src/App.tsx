@@ -6,6 +6,7 @@ import { SettingsProvider } from "./hooks/useSettings";
 import { NavBar } from "./components/NavBar";
 import { Home } from "./routes/Home";
 import { Settings } from "./routes/Settings";
+import { Syllabus } from "./routes/Syllabus";
 
 function App() {
   const [authReady, setAuthReady] = useState(false);
@@ -46,18 +47,11 @@ function App() {
         <NavBar />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/syllabus" element={<Syllabus />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </BrowserRouter>
     </SettingsProvider>
-  );
-}
-
-function App() {
-  return (
-    <AuthGate>
-      <AppContent />
-    </AuthGate>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { supabase } from "../supabase";
+import { supabase } from "../lib/supabaseClient";
 
 export function SyllabusUpload({ onUploaded }: { onUploaded: () => void }) {
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ExamStage } from "./useExamStages";
+import type { ExamStage } from "../hooks/useExamStages";
 
 export function CountdownTile({
   stage,

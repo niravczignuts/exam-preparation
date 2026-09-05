@@ -11,6 +11,9 @@ export function NavBar() {
         <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
           {t("navHome")}
         </NavLink>
+        <NavLink to="/syllabus" className={({ isActive }) => (isActive ? "active" : "")}>
+          {t("navSyllabus")}
+        </NavLink>
         <NavLink to="/settings" className={({ isActive }) => (isActive ? "active" : "")}>
           {t("navSettings")}
         </NavLink>

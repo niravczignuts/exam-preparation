@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "../supabase";
+import { supabase } from "../lib/supabaseClient";
 
 export type TopicStatus = "not_started" | "in_progress" | "completed" | "revision_needed";
 

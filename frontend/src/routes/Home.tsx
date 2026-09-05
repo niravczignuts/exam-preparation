@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { CountdownTile } from "../countdown/CountdownTile";
 import { onForegroundMessage, requestPushToken } from "../firebase";
+import { useExamStages } from "../hooks/useExamStages";
 
 export function Home() {
   const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "unreachable">("checking");
   const [pushToken, setPushToken] = useState<string | null | "pending" | "error">(null);
+  const { stages, loading, deleteStage } = useExamStages();
 
   useEffect(() => {
     const base = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -35,7 +38,18 @@ export function Home() {
   return (
     <main>
       <h1>Exam Prep App</h1>
-      <p>Foundation scaffold — Sprint 1 (see docs/SETUP.md to wire up the rest).</p>
+
+      {!loading && stages.length > 0 && (
+        <div className="countdown-grid">
+          {stages.map((stage) => (
+            <CountdownTile key={stage.id} stage={stage} onRemove={() => deleteStage(stage.id)} />
+          ))}
+        </div>
+      )}
+      {!loading && stages.length === 0 && (
+        <p>No exam dates configured yet — add one in Settings.</p>
+      )}
+
       <p>Backend API: {apiStatus}</p>
 
       <button type="button" onClick={enableNotifications}>

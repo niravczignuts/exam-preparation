@@ -47,12 +47,10 @@ Per this ticket's own acceptance criteria, the Firebase project itself is the pr
 
 ## 6. Supabase Auth (Sprint 3)
 
-The syllabus features (KAN-18..22) require a real signed-in user — every table's RLS policy checks `auth.uid()`.
+The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Settings/Exam Stages — every table's RLS policy checks it. There's no separate sign-up flow for this: the anonymous session from step 2/6 above already gives every table (syllabus included) a stable `auth.uid()`, so no email/password login screen was added.
 
-1. Supabase Dashboard → Authentication → Providers → make sure **Email** is enabled (it is by default).
-2. For local/dev testing, Authentication → Settings → turn off "Confirm email" so `supabase.auth.signUp()` returns an active session immediately instead of requiring an email link (leave it on in production).
-3. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the token the frontend sends on `POST /syllabus/uploads`.
-4. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
+1. Copy the **JWT Secret** from Project Settings → API → JWT Settings into `backend/.env`'s `SUPABASE_JWT_SECRET` (and as a Render env var in production) — the backend uses it to verify the Supabase Auth token (anonymous session included) the frontend sends on `POST /syllabus/uploads`.
+2. Get an API key from console.anthropic.com and set `backend/.env`'s `ANTHROPIC_API_KEY` (and the Render env var) — used to auto-structure uploaded syllabus files (KAN-19).
 
 ## What's genuinely done vs. what needs you
 
@@ -67,3 +65,5 @@ The syllabus features (KAN-18..22) require a real signed-in user — every table
 | KAN-59/60/61/62 | Settings + Exam Stages UI, `reset_user_data()` migration | Enable anonymous sign-ins (step 6 above), `supabase db push` migration 0004 |
 | KAN-63/64 | Manifest, extended service worker (offline caching + background sync) | None — icons reuse `favicon.svg`; swap in real PNG/maskable icons when design assets exist |
 | KAN-65 | Responsive nav + layout pass | None |
+| KAN-18..22 | Syllabus CRUD, upload/parse endpoint, completion tracking | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (step 6 above) |
+| KAN-50, KAN-51 | Countdown tile(s) on Home, multi-stage support | None |

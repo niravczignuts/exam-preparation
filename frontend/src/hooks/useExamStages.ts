@@ -7,6 +7,7 @@ export interface ExamStage {
   user_id: string;
   name: string;
   exam_date: string;
+  exam_time: string;
 }
 
 registerReplayHandler("exam-stage-insert", async (payload) => {
@@ -61,7 +62,10 @@ export function useExamStages() {
       queueWrite("exam-stage-insert", row);
       setSaveState("offline");
       setStages((prev) =>
-        sortByDate([...prev, { id: `pending-${crypto.randomUUID()}`, ...row }]),
+        sortByDate([
+          ...prev,
+          { id: `pending-${crypto.randomUUID()}`, exam_time: "09:00:00", ...row },
+        ]),
       );
     }
   }, []);
