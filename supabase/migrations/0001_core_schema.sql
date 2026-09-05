@@ -219,9 +219,9 @@ declare
 begin
   for t in
     select unnest(array[
-      'settings', 'exam_stages', 'subjects', 'topics', 'pyq_uploads', 'questions',
+      'settings', 'exam_stages', 'subjects', 'pyq_uploads', 'questions',
       'question_attempts', 'mock_tests', 'mock_test_attempts', 'timetables',
-      'timetable_sessions', 'daily_targets', 'daily_checkins', 'streaks',
+      'daily_targets', 'daily_checkins', 'streaks',
       'revision_queue_items', 'device_tokens', 'notification_log'
     ])
   loop
@@ -233,7 +233,7 @@ begin
   end loop;
 end $$;
 
--- mock_test_questions has no direct user_id; scope it via its parent mock_test.
+-- Tables with no direct user_id column are scoped via their parent's owner.
 alter table mock_test_questions enable row level security;
 create policy "owner_full_access" on mock_test_questions for all
   using (exists (
@@ -241,4 +241,22 @@ create policy "owner_full_access" on mock_test_questions for all
   ))
   with check (exists (
     select 1 from mock_tests mt where mt.id = mock_test_questions.mock_test_id and mt.user_id = auth.uid()
+  ));
+
+alter table topics enable row level security;
+create policy "owner_full_access" on topics for all
+  using (exists (
+    select 1 from subjects s where s.id = topics.subject_id and s.user_id = auth.uid()
+  ))
+  with check (exists (
+    select 1 from subjects s where s.id = topics.subject_id and s.user_id = auth.uid()
+  ));
+
+alter table timetable_sessions enable row level security;
+create policy "owner_full_access" on timetable_sessions for all
+  using (exists (
+    select 1 from timetables tt where tt.id = timetable_sessions.timetable_id and tt.user_id = auth.uid()
+  ))
+  with check (exists (
+    select 1 from timetables tt where tt.id = timetable_sessions.timetable_id and tt.user_id = auth.uid()
   ));
