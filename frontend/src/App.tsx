@@ -12,6 +12,7 @@ import { MockTestReport } from "./routes/MockTestReport";
 import { MockTestRunner } from "./routes/MockTestRunner";
 import { Practice } from "./routes/Practice";
 import { Pyq } from "./routes/Pyq";
+import { Revision } from "./routes/Revision";
 import { Settings } from "./routes/Settings";
 import { Syllabus } from "./routes/Syllabus";
 import { Timetable } from "./routes/Timetable";
@@ -59,6 +60,7 @@ function App() {
                   <Route path="/mock-test" element={<MockTest />} />
                   <Route path="/mock-test/:attemptId/run" element={<MockTestRunner />} />
                   <Route path="/mock-test/:attemptId/report" element={<MockTestReport />} />
+                  <Route path="/revision" element={<Revision />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>

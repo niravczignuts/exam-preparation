@@ -79,17 +79,53 @@ export async function recordAttempt(params: {
   if (error) return { error: error.message };
 
   if (params.wasSkipped || params.isCorrect === false) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const { error: queueError } = await supabase.from("revision_queue_items").insert({
-      user_id: userId,
-      question_id: params.questionId,
-      added_reason: params.wasSkipped ? "skipped" : "wrong",
-      interval_stage: 1,
-      next_review_date: tomorrow.toISOString().slice(0, 10),
-    });
-    if (queueError) return { error: queueError.message };
+    const { error: queueError } = await queueForRevision(
+      userId,
+      params.questionId,
+      params.wasSkipped ? "skipped" : "wrong",
+    );
+    if (queueError) return { error: queueError };
   }
 
   return { error: null };
+}
+
+/** Adds (or resets, if already pending — KAN-56's no-duplicates AC) a question to the
+ * active revision queue at the shortest interval. A question already "cleared" gets a
+ * fresh pending row instead of updating the cleared one, so the cleared attempt stays
+ * in the archive (KAN-58's "re-add without losing history" AC). */
+async function queueForRevision(
+  userId: string,
+  questionId: string,
+  reason: "wrong" | "skipped",
+): Promise<{ error: string | null }> {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextReviewDate = tomorrow.toISOString().slice(0, 10);
+
+  const { data: existing, error: findError } = await supabase
+    .from("revision_queue_items")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("question_id", questionId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (findError) return { error: findError.message };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("revision_queue_items")
+      .update({ added_reason: reason, interval_stage: 1, next_review_date: nextReviewDate })
+      .eq("id", existing.id);
+    return { error: error?.message ?? null };
+  }
+
+  const { error } = await supabase.from("revision_queue_items").insert({
+    user_id: userId,
+    question_id: questionId,
+    added_reason: reason,
+    interval_stage: 1,
+    next_review_date: nextReviewDate,
+  });
+  return { error: error?.message ?? null };
 }

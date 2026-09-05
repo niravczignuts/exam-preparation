@@ -71,3 +71,4 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 | KAN-28 | Wrong/skipped answers auto-added to `revision_queue_items` | None — full spaced-repetition scheduling UI is KAN-13 |
 | KAN-34..37 | Timetable CRUD (day/week/month views), auto-suggest from remaining syllabus + exam date, missed-session detection + reschedule suggestions | None — all direct-to-Supabase, no new backend/env needed |
 | KAN-30..33 | Mock test generation (proportional MCQ selection from the Q&A bank), timed test-taking UI with flag/navigate/auto-submit, score report with topic breakdown, history + score trend chart | `supabase db push` migration 0006 |
+| KAN-56..58 | Revision queue UI, 1/3/7-day spaced-repetition scheduling, cleared-item archive, no-duplicate-pending upsert on repeat wrong answers | None — all direct-to-Supabase, no new backend/env needed |
