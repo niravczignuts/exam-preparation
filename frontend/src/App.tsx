@@ -7,6 +7,8 @@ import { SettingsProvider } from "./hooks/useSettings";
 import { Toaster } from "./components/ui/sonner";
 import { NavBar } from "./components/NavBar";
 import { Home } from "./routes/Home";
+import { Practice } from "./routes/Practice";
+import { Pyq } from "./routes/Pyq";
 import { Settings } from "./routes/Settings";
 import { Syllabus } from "./routes/Syllabus";
 
@@ -47,6 +49,8 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/syllabus" element={<Syllabus />} />
+                  <Route path="/pyq" element={<Pyq />} />
+                  <Route path="/practice" element={<Practice />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>

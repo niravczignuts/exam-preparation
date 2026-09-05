@@ -15,6 +15,8 @@ import {
 const NAV_LINKS = [
   { to: "/", key: "navHome" as const, end: true },
   { to: "/syllabus", key: "navSyllabus" as const, end: false },
+  { to: "/pyq", key: "navPyq" as const, end: false },
+  { to: "/practice", key: "navPractice" as const, end: false },
   { to: "/settings", key: "navSettings" as const, end: false },
 ];
 
@@ -57,7 +59,7 @@ export function NavBar() {
           <span className="hidden sm:inline">Exam Prep</span>
         </div>
 
-        <nav className="flex flex-1 items-center gap-1">
+        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
           {NAV_LINKS.map(({ to, key, end }) => (
             <NavLink
               key={to}
@@ -65,7 +67,7 @@ export function NavBar() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",

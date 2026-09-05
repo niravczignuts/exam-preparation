@@ -9,6 +9,8 @@ const strings = {
   gu: {
     navHome: "હોમ",
     navSyllabus: "અભ્યાસક્રમ",
+    navPyq: "પ્રશ્નો",
+    navPractice: "પ્રેક્ટિસ",
     navSettings: "સેટિંગ્સ",
     settingsTitle: "સેટિંગ્સ",
     language: "ભાષા",
@@ -38,6 +40,8 @@ const strings = {
   en: {
     navHome: "Home",
     navSyllabus: "Syllabus",
+    navPyq: "Q&A",
+    navPractice: "Practice",
     navSettings: "Settings",
     settingsTitle: "Settings",
     language: "Language",

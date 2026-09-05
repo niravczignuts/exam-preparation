@@ -12,7 +12,7 @@ Full instructions: `supabase/README.md`. Short version:
 1. Create a project at supabase.com/dashboard.
 2. `npm install -g supabase && supabase login`
 3. `supabase link --project-ref <your-project-ref>`
-4. `supabase db push` — applies `supabase/migrations/0001_core_schema.sql`, `0002_storage_buckets.sql`, and `0004_reset_user_data_function.sql`.
+4. `supabase db push` — applies every migration under `supabase/migrations/`, including `0005_pyq_uploads_error_message.sql` (KAN-24/25 failure reporting — `pyq_uploads`/`questions`/`question_attempts`/`revision_queue_items` themselves were already part of `0001_core_schema.sql`).
 5. Copy `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Project Settings → API — you'll need them in step 4 below.
 6. **Authentication → Sign In / Providers → enable "Allow anonymous sign-ins"** (Sprint 2, KAN-59/60/61/62). The app has no login screen; the frontend signs in anonymously on first load so `settings`/`exam_stages`' RLS policies (scoped to `auth.uid()`) have a real user to key off. Without this toggle, Settings/Exam Stages will fail to load with an "Anonymous sign-ins are disabled" error.
 
@@ -67,3 +67,5 @@ The syllabus features (KAN-18..22) need a real `auth.uid()` too, same as Setting
 | KAN-65 | Responsive nav + layout pass | None |
 | KAN-18..22 | Syllabus CRUD, upload/parse endpoint, completion tracking | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (step 6 above) |
 | KAN-50, KAN-51 | Countdown tile(s) on Home, multi-stage support | None |
+| KAN-23..27, KAN-29 | Multi-file PYQ upload + auto-parse/answer/tag endpoint, Q&A bank UI (edit/delete/re-tag), timed/untimed practice mode | Set `SUPABASE_JWT_SECRET` + `ANTHROPIC_API_KEY` (same as KAN-18..22, shared) |
+| KAN-28 | Wrong/skipped answers auto-added to `revision_queue_items` | None — full spaced-repetition scheduling UI is KAN-13 |

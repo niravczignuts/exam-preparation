@@ -1,0 +1,93 @@
+import { useCallback, useEffect, useState } from "react";
+
+import { getCurrentUserId, supabase } from "@/lib/supabaseClient";
+
+export interface Question {
+  id: string;
+  topic_id: string | null;
+  pyq_upload_id: string | null;
+  question_text: string;
+  options: string[];
+  correct_answer: string | null;
+  explanation: string | null;
+  exam_year: number | null;
+  created_at: string;
+  topics: { name: string; subjects: { name: string } | null } | null;
+}
+
+export function useQuestions() {
+  const [questions, setQuestions] = useState<Question[] | "loading">("loading");
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("questions")
+      .select("*, topics(name, subjects(name))")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setError(null);
+    setQuestions(data as unknown as Question[]);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { questions, error, refresh };
+}
+
+export async function updateQuestion(
+  id: string,
+  fields: Partial<
+    Pick<Question, "question_text" | "options" | "correct_answer" | "explanation" | "topic_id">
+  >,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("questions").update(fields).eq("id", id);
+  return { error: error?.message ?? null };
+}
+
+export async function deleteQuestion(id: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("questions").delete().eq("id", id);
+  return { error: error?.message ?? null };
+}
+
+/** Records a practice/mock-test attempt, and queues the question for spaced-repetition
+ * revision when it's wrong or skipped (KAN-27, KAN-28). Revision Queue's own scheduling UI
+ * (KAN-13) reads this same `revision_queue_items` table. */
+export async function recordAttempt(params: {
+  questionId: string;
+  selectedAnswer: string | null;
+  isCorrect: boolean | null;
+  wasSkipped: boolean;
+  source?: "practice" | "mock_test";
+}): Promise<{ error: string | null }> {
+  const userId = await getCurrentUserId();
+  const { error } = await supabase.from("question_attempts").insert({
+    user_id: userId,
+    question_id: params.questionId,
+    selected_answer: params.selectedAnswer,
+    is_correct: params.isCorrect,
+    was_skipped: params.wasSkipped,
+    source: params.source ?? "practice",
+  });
+  if (error) return { error: error.message };
+
+  if (params.wasSkipped || params.isCorrect === false) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { error: queueError } = await supabase.from("revision_queue_items").insert({
+      user_id: userId,
+      question_id: params.questionId,
+      added_reason: params.wasSkipped ? "skipped" : "wrong",
+      interval_stage: 1,
+      next_review_date: tomorrow.toISOString().slice(0, 10),
+    });
+    if (queueError) return { error: queueError.message };
+  }
+
+  return { error: null };
+}

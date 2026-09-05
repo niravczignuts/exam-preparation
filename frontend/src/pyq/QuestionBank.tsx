@@ -1,0 +1,230 @@
+import { useMemo, useState } from "react";
+import { PencilIcon, TrashIcon } from "lucide-react";
+import { toast } from "sonner";
+
+import type { SubjectNode, TopicNode } from "@/syllabus/useSyllabusTree";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { deleteQuestion, updateQuestion, useQuestions, type Question } from "./usePyqQuestions";
+
+function flattenTopics(subjects: SubjectNode[]): { id: string; label: string }[] {
+  const out: { id: string; label: string }[] = [];
+  function walk(topics: TopicNode[], subjectName: string, prefix: string) {
+    for (const topic of topics) {
+      const label = `${subjectName} > ${prefix}${topic.name}`;
+      out.push({ id: topic.id, label });
+      if (topic.subtopics.length) walk(topic.subtopics, subjectName, `${prefix}${topic.name} > `);
+    }
+  }
+  for (const subject of subjects) walk(subject.topics, subject.name, "");
+  return out;
+}
+
+function EditQuestionDialog({
+  question,
+  topicOptions,
+  onClose,
+  onSaved,
+}: {
+  question: Question;
+  topicOptions: { id: string; label: string }[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [questionText, setQuestionText] = useState(question.question_text);
+  const [correctAnswer, setCorrectAnswer] = useState(question.correct_answer ?? "");
+  const [explanation, setExplanation] = useState(question.explanation ?? "");
+  const [topicId, setTopicId] = useState(question.topic_id ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    const { error } = await updateQuestion(question.id, {
+      question_text: questionText,
+      correct_answer: correctAnswer || null,
+      explanation: explanation || null,
+      topic_id: topicId || null,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit question</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>Question</Label>
+            <Textarea value={questionText} onChange={(e) => setQuestionText(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Correct answer</Label>
+            <Textarea value={correctAnswer} onChange={(e) => setCorrectAnswer(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Explanation</Label>
+            <Textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Tag to topic</Label>
+            <select
+              value={topicId}
+              onChange={(e) => setTopicId(e.target.value)}
+              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+            >
+              <option value="">Untagged</option>
+              {topicOptions.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function QuestionBank({ subjects }: { subjects: SubjectNode[] }) {
+  const { questions, error, refresh } = useQuestions();
+  const [editing, setEditing] = useState<Question | null>(null);
+  const [filterTopicId, setFilterTopicId] = useState("");
+
+  const topicOptions = useMemo(() => flattenTopics(subjects), [subjects]);
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this question?")) return;
+    const { error } = await deleteQuestion(id);
+    if (error) toast.error(error);
+    refresh();
+  }
+
+  if (questions === "loading") {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+
+  const filtered = filterTopicId
+    ? questions.filter((q) => q.topic_id === filterTopicId)
+    : questions;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">
+          Q&amp;A bank <span className="text-muted-foreground font-normal">({questions.length})</span>
+        </h2>
+        {topicOptions.length > 0 && (
+          <select
+            value={filterTopicId}
+            onChange={(e) => setFilterTopicId(e.target.value)}
+            className="border-input bg-background h-8 rounded-md border px-2 text-xs shadow-xs outline-none"
+          >
+            <option value="">All topics</option>
+            {topicOptions.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
+
+      {filtered.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No questions yet — upload a PYQ paper above to get started.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {filtered.map((question) => (
+            <Card key={question.id} className="gap-2 py-4">
+              <CardContent className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">{question.question_text}</p>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setEditing(question)}
+                    >
+                      <PencilIcon className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive size-7"
+                      onClick={() => handleDelete(question.id)}
+                    >
+                      <TrashIcon className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {question.topics ? (
+                    <Badge variant="secondary">
+                      {question.topics.subjects?.name} · {question.topics.name}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Untagged</Badge>
+                  )}
+                  {question.exam_year && <Badge variant="outline">{question.exam_year}</Badge>}
+                  {question.options.length > 0 && (
+                    <Badge variant="outline">{question.options.length} options</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <EditQuestionDialog
+          question={editing}
+          topicOptions={topicOptions}
+          onClose={() => setEditing(null)}
+          onSaved={refresh}
+        />
+      )}
+    </div>
+  );
+}
